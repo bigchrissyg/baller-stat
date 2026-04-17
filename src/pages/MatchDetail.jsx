@@ -146,10 +146,10 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
 // SVG coordinate space: viewBox "0 0 100 148"
 // GK defends top goal (low y), attackers push toward bottom (high y).
 const PITCH_POS = {
-  GK:  { x: 50, y: 10 },
-  LB:  { x: 20, y: 33 }, CB:  { x: 50, y: 33 }, RB:  { x: 80, y: 33 },
+  GK:  { x: 50, y: 20 },
+  LB:  { x: 20, y: 40 }, CB:  { x: 50, y: 40 }, RB:  { x: 80, y: 40 },
   CDM: { x: 50, y: 60 },
-  LM:  { x: 18, y: 90 }, CM:  { x: 50, y: 90 }, RM:  { x: 80, y: 90 },
+  LM:  { x: 18, y: 90 }, CM:  { x: 50, y: 70 }, RM:  { x: 80, y: 90 },
   CAM: { x: 50, y: 105 },
   LF:  { x: 22, y: 120 }, CF:  { x: 50, y: 120 }, RF:  { x: 78, y: 120 },
   ST:  { x: 50, y: 120 },
@@ -293,8 +293,6 @@ function PitchView({ match }) {
 function LineupMatrix({ match, editMode, onRefetch }) {
   const matchLen = match.match_length_mins || 60
   const segments = getMatchSegments(matchLen)
-  const allApps = match.player_appearances || []
-  const playersInMatch = getUniquePlayersFromAppearances(allApps)
   const { players: allPlayers } = usePlayers()
 
   const [lineupTab, setLineupTab] = useState('matrix')
@@ -302,6 +300,15 @@ function LineupMatrix({ match, editMode, onRefetch }) {
   const [addForm, setAddForm] = useState({ player_id: '', time_start: 0, time_end: matchLen / 2, position: 'GK' })
   const [addErr, setAddErr] = useState(null)
   const [excluded, setExcluded] = useState(new Set())
+  const [appearances, setAppearances] = useState(match.player_appearances || [])
+
+  // Sync local appearances with match data when it changes
+  useEffect(() => {
+    setAppearances(match.player_appearances || [])
+  }, [match.player_appearances])
+
+  const allApps = appearances
+  const playersInMatch = getUniquePlayersFromAppearances(allApps)
 
   // Reset exclusions each time edit mode opens
   useEffect(() => { if (editMode) setExcluded(new Set()) }, [editMode])
@@ -316,24 +323,54 @@ function LineupMatrix({ match, editMode, onRefetch }) {
            .reduce((sum, a) => sum + (a.time_end - a.time_start), 0)
 
   // Trim or delete each appearance so it no longer covers the given segment's time window
-  const trimOrDeleteCovering = async (covering, segment) => {
-    await Promise.all(covering.map(async (app) => {
+  // Returns updated appearance list for optimistic updates
+  const trimOrDeleteCovering = async (covering, segment, currentApps) => {
+    const updated = [...currentApps]
+    
+    for (const app of covering) {
       const left  = app.time_start < segment.start
       const right = app.time_end   > segment.end
+      
       if (left && right) {
+        // Split: shorten existing, create new for the remainder
+        const idx = updated.findIndex(a => a.id === app.id)
+        updated[idx] = { ...updated[idx], time_end: segment.start }
+        const newId = Math.max(...updated.map(a => a.id || 0), 0) + 1
+        updated.push({
+          id: newId,
+          player_id: app.player_id,
+          match_id: app.match_id,
+          position: app.position,
+          time_start: segment.end,
+          time_end: app.time_end,
+        })
         await updatePlayerAppearance(app.id, { time_end: segment.start })
         await insertPlayerAppearance({
-          player_id: app.player_id, match_id: app.match_id, position: app.position,
-          time_start: segment.end, time_end: app.time_end,
+          player_id: app.player_id,
+          match_id: app.match_id,
+          position: app.position,
+          time_start: segment.end,
+          time_end: app.time_end,
         })
       } else if (left) {
+        // Trim from right
+        const idx = updated.findIndex(a => a.id === app.id)
+        updated[idx] = { ...updated[idx], time_end: segment.start }
         await updatePlayerAppearance(app.id, { time_end: segment.start })
       } else if (right) {
+        // Trim from left
+        const idx = updated.findIndex(a => a.id === app.id)
+        updated[idx] = { ...updated[idx], time_start: segment.end }
         await updatePlayerAppearance(app.id, { time_start: segment.end })
       } else {
+        // Remove entirely
+        const idx = updated.findIndex(a => a.id === app.id)
+        updated.splice(idx, 1)
         await deletePlayerAppearance(app.id)
       }
-    }))
+    }
+    
+    return updated
   }
 
   // Update or adjust the appearance(s) covering a segment for a player
@@ -341,29 +378,62 @@ function LineupMatrix({ match, editMode, onRefetch }) {
     setBusy(true)
     try {
       const covering = findCoveringAppearances(allApps, playerId, segment)
+      let updated = [...allApps]
+      
       if (newPos === '') {
-        await trimOrDeleteCovering(covering, segment)
+        // Remove position for this segment
+        updated = await trimOrDeleteCovering(covering, segment, updated)
       } else if (covering.length === 0) {
+        // Create new appearance
         const slot = segmentToAppearanceSlot(segment, matchLen)
-        await insertPlayerAppearance({ ...slot, player_id: playerId, match_id: match.id, position: newPos })
+        const result = await insertPlayerAppearance({ ...slot, player_id: playerId, match_id: match.id, position: newPos })
+        updated.push({ 
+          id: result?.id || Math.max(...updated.map(a => a.id || 0), 0) + 1,
+          ...slot, 
+          player_id: playerId, 
+          match_id: match.id, 
+          position: newPos,
+          players: { name: (allApps.find(a => a.player_id === playerId)?.players?.name) || 'Unknown' }
+        })
       } else if (
         covering.length === 1 &&
         covering[0].time_start === segment.start &&
         covering[0].time_end === segment.end
       ) {
-        // Record already exactly matches this segment — just update position
+        // Update existing appearance position
+        const idx = updated.findIndex(a => a.id === covering[0].id)
+        updated[idx] = { ...updated[idx], position: newPos }
         await updatePlayerAppearance(covering[0].id, { position: newPos })
       } else {
         // Trim/split covering records to remove this segment's window, then insert a precise new record
-        await trimOrDeleteCovering(covering, segment)
-        await insertPlayerAppearance({
-          player_id: playerId, match_id: match.id, position: newPos,
-          time_start: segment.start, time_end: segment.end,
+        updated = await trimOrDeleteCovering(covering, segment, updated)
+        const result = await insertPlayerAppearance({
+          player_id: playerId,
+          match_id: match.id,
+          position: newPos,
+          time_start: segment.start,
+          time_end: segment.end,
+        })
+        updated.push({
+          id: result?.id || Math.max(...updated.map(a => a.id || 0), 0) + 1,
+          player_id: playerId,
+          match_id: match.id,
+          position: newPos,
+          time_start: segment.start,
+          time_end: segment.end,
+          players: { name: (allApps.find(a => a.player_id === playerId)?.players?.name) || 'Unknown' }
         })
       }
+      
+      // Optimistically update local state
+      setAppearances(updated)
+    } catch (e) { 
+      alert(e.message)
+      // Refetch on error to sync state
       await onRefetch()
-    } catch (e) { alert(e.message) }
-    finally { setBusy(false) }
+    } finally { 
+      setBusy(false) 
+    }
   }
 
   // Remove a player: delete all their appearances for this match, or just hide them locally
@@ -372,10 +442,19 @@ function LineupMatrix({ match, editMode, onRefetch }) {
     if (playerApps.length > 0) {
       setBusy(true)
       try {
+        // Optimistically remove from state
+        const updated = allApps.filter(a => a.player_id !== playerId)
+        setAppearances(updated)
+        
+        // Delete from server
         await Promise.all(playerApps.map(a => deletePlayerAppearance(a.id)))
+      } catch (e) { 
+        alert(e.message)
+        // Refetch on error to sync state
         await onRefetch()
-      } catch (e) { alert(e.message) }
-      finally { setBusy(false) }
+      } finally { 
+        setBusy(false) 
+      }
     } else {
       setExcluded(prev => new Set([...prev, playerId]))
     }
@@ -389,16 +468,32 @@ function LineupMatrix({ match, editMode, onRefetch }) {
     try {
       const tsNum = Number(addForm.time_start)
       const teNum = Number(addForm.time_end)
-      await insertPlayerAppearance({
+      const result = await insertPlayerAppearance({
         player_id: addForm.player_id,
         position: addForm.position,
         match_id: match.id,
         time_start: tsNum,
         time_end: teNum,
       })
+      
+      // Optimistically add to state
+      const playerName = (allPlayers || []).find(p => p.id === Number(addForm.player_id))?.name || 'Unknown'
+      setAppearances([...allApps, {
+        id: result?.id || Math.max(...allApps.map(a => a.id || 0), 0) + 1,
+        player_id: Number(addForm.player_id),
+        position: addForm.position,
+        match_id: match.id,
+        time_start: tsNum,
+        time_end: teNum,
+        players: { name: playerName }
+      }])
+      
       setAddForm({ player_id: '', time_start: 0, time_end: matchLen / 2, position: 'GK' })
+    } catch (e) { 
+      setAddErr(e.message)
+      // Refetch on error to sync state
       await onRefetch()
-    } catch (e) { setAddErr(e.message) }
+    }
     finally { setBusy(false) }
   }
 
@@ -561,9 +656,9 @@ function LineupMatrix({ match, editMode, onRefetch }) {
 // ─── Goals & Events Section ───────────────────────────────────────────────────
 
 function GoalsSection({ match, editMode, onRefetch }) {
-  const goals = match.goals || []
   const { players: allPlayers } = usePlayers()
   const matchLen = match.match_length_mins || 60
+  const [goals, setGoals] = useState(match.goals || [])
   const [form, setForm] = useState({
     scorer_player_id: '',
     assist_player_id: '',
@@ -574,21 +669,42 @@ function GoalsSection({ match, editMode, onRefetch }) {
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
 
+  // Sync local goals with match data when it changes
+  useEffect(() => {
+    setGoals(match.goals || [])
+  }, [match.goals])
+
   const handleAdd = async (e) => {
     e.preventDefault()
     if (!form.scorer_player_id) return
     setSaving(true); setErr(null)
     try {
-      await insertGoal({
+      const result = await insertGoal({
         ...form,
         match_id: match.id,
         assist_player_id: form.assist_player_id || null,
         goal_quarter: Number(form.goal_quarter),
       })
+      
+      // Optimistically add to state
+      const scorer = allPlayers?.find(p => p.id === Number(form.scorer_player_id))
+      const assist = form.assist_player_id ? allPlayers?.find(p => p.id === Number(form.assist_player_id)) : null
+      setGoals([...goals, {
+        id: result?.id || Math.max(...goals.map(a => a.id || 0), 0) + 1,
+        ...form,
+        goal_quarter: Number(form.goal_quarter),
+        players: { name: scorer?.name || 'Unknown' },
+        players_assist: assist ? { name: assist.name } : null,
+      }])
+      
       setForm({ scorer_player_id: '', assist_player_id: '', for_histon: true, goal_half: 'H1', goal_quarter: 1 })
+    } catch (e) { 
+      setErr(e.message)
+      // Refetch on error to sync state
       await onRefetch()
-    } catch (e) { setErr(e.message) }
-    finally { setSaving(false) }
+    } finally { 
+      setSaving(false) 
+    }
   }
 
   const histonGoals = goals.filter(g => g.for_histon)
@@ -629,8 +745,22 @@ function GoalsSection({ match, editMode, onRefetch }) {
                 <GoalTiming g={g} />
               </div>
               {editMode && (
-                <button onClick={async () => { await deleteGoal(g.id); onRefetch() }}
-                  className="text-xs text-rose-500 hover:text-rose-700 font-medium shrink-0">✕</button>
+                <button onClick={async () => { 
+                  setSaving(true)
+                  try {
+                    // Optimistically remove from state
+                    setGoals(goals.filter(goal => goal.id !== g.id))
+                    // Delete from server
+                    await deleteGoal(g.id)
+                  } catch (e) {
+                    alert(e.message)
+                    // Refetch on error to sync state
+                    await onRefetch()
+                  } finally {
+                    setSaving(false)
+                  }
+                }}
+                  className="text-xs text-rose-500 hover:text-rose-700 font-medium shrink-0 disabled:opacity-50" disabled={saving}>✕</button>
               )}
             </div>
           ))}
@@ -654,8 +784,22 @@ function GoalsSection({ match, editMode, onRefetch }) {
                 <GoalTiming g={g} />
               </div>
               {editMode && (
-                <button onClick={async () => { await deleteGoal(g.id); onRefetch() }}
-                  className="text-xs text-rose-500 hover:text-rose-700 font-medium shrink-0">✕</button>
+                <button onClick={async () => { 
+                  setSaving(true)
+                  try {
+                    // Optimistically remove from state
+                    setGoals(goals.filter(goal => goal.id !== g.id))
+                    // Delete from server
+                    await deleteGoal(g.id)
+                  } catch (e) {
+                    alert(e.message)
+                    // Refetch on error to sync state
+                    await onRefetch()
+                  } finally {
+                    setSaving(false)
+                  }
+                }}
+                  className="text-xs text-rose-500 hover:text-rose-700 font-medium shrink-0 disabled:opacity-50" disabled={saving}>✕</button>
               )}
             </div>
           ))}
@@ -735,19 +879,40 @@ function GoalsSection({ match, editMode, onRefetch }) {
 // ─── Star Players ─────────────────────────────────────────────────────────────
 
 function StarPlayersSection({ match, editMode, onRefetch }) {
-  const awards = match.star_player_awards || []
   const playersInMatch = getUniquePlayersFromAppearances(match.player_appearances || [])
+  const [awards, setAwards] = useState(match.star_player_awards || [])
   const [saving, setSaving] = useState(false)
+
+  // Sync local awards with match data when it changes
+  useEffect(() => {
+    setAwards(match.star_player_awards || [])
+  }, [match.star_player_awards])
 
   const toggle = async (player) => {
     const existing = awards.find(a => a.player_id === player.id)
     setSaving(true)
     try {
-      if (existing) await deleteStarPlayerAward(existing.id)
-      else await insertStarPlayerAward({ player_id: player.id, match_id: match.id })
+      if (existing) {
+        // Optimistically remove
+        setAwards(awards.filter(a => a.id !== existing.id))
+        await deleteStarPlayerAward(existing.id)
+      } else {
+        // Optimistically add
+        const result = await insertStarPlayerAward({ player_id: player.id, match_id: match.id })
+        setAwards([...awards, {
+          id: result?.id || Math.max(...awards.map(a => a.id || 0), 0) + 1,
+          player_id: player.id,
+          match_id: match.id,
+          players: { name: player.name }
+        }])
+      }
+    } catch (e) { 
+      alert(e.message)
+      // Refetch on error to sync state
       await onRefetch()
-    } catch (e) { alert(e.message) }
-    finally { setSaving(false) }
+    } finally { 
+      setSaving(false) 
+    }
   }
 
   if (awards.length === 0 && !editMode) return null
