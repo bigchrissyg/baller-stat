@@ -1,0 +1,25 @@
+name = "baller-stats"
+type = "javascript"
+main = "src/worker.ts"
+compatibility_date = "2024-01-01"
+
+# Environment variables (configured in Cloudflare dashboard)
+[env.production]
+vars = { VITE_SUPABASE_URL = "", VITE_SUPABASE_ANON_KEY = "" }
+
+[build]
+command = "npm run build"
+watch_paths = ["src/**/*", "index.html", "*.css"]
+
+[build.upload]
+format = "modules"
+
+[[build.upload_rules]]
+globs = ["**/*.wasm"]
+fallthrough = true
+
+[[build.upload_rules]]
+globs = ["dist/**/*"]
+type = "CompiledContentType"
+fallthrough = false
+
