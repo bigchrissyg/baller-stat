@@ -141,6 +141,153 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
   )
 }
 
+// ─── Pitch View ──────────────────────────────────────────────────────────────
+
+// SVG coordinate space: viewBox "0 0 100 148"
+// GK defends top goal (low y), attackers push toward bottom (high y).
+const PITCH_POS = {
+  GK:  { x: 50, y: 10 },
+  LB:  { x: 20, y: 33 }, CB:  { x: 50, y: 33 }, RB:  { x: 80, y: 33 },
+  CDM: { x: 50, y: 60 },
+  LM:  { x: 18, y: 90 }, CM:  { x: 50, y: 90 }, RM:  { x: 80, y: 90 },
+  CAM: { x: 50, y: 105 },
+  LF:  { x: 22, y: 120 }, CF:  { x: 50, y: 120 }, RF:  { x: 78, y: 120 },
+  ST:  { x: 50, y: 120 },
+}
+
+const POS_SVG_COLOR = {
+  GK:  { fill: '#9333ea', stroke: '#7e22ce' },
+  CB:  { fill: '#dc2626', stroke: '#b91c1c' },
+  LB:  { fill: '#dc2626', stroke: '#b91c1c' },
+  RB:  { fill: '#dc2626', stroke: '#b91c1c' },
+  CM:  { fill: '#ca8a04', stroke: '#a16207' },
+  CDM: { fill: '#ca8a04', stroke: '#a16207' },
+  CAM: { fill: '#ca8a04', stroke: '#a16207' },
+  LM:  { fill: '#ca8a04', stroke: '#a16207' },
+  RM:  { fill: '#ca8a04', stroke: '#a16207' },
+  CF:  { fill: '#16a34a', stroke: '#15803d' },
+  LF:  { fill: '#16a34a', stroke: '#15803d' },
+  RF:  { fill: '#16a34a', stroke: '#15803d' },
+  ST:  { fill: '#16a34a', stroke: '#15803d' },
+}
+
+// Renders a single pitch SVG with the given list of {id, name, position} players
+function FormationPitch({ players }) {
+  const byPos = {}
+  for (const p of players) {
+    if (!byPos[p.position]) byPos[p.position] = []
+    byPos[p.position].push(p)
+  }
+  const placed = []
+  for (const [pos, group] of Object.entries(byPos)) {
+    const base = PITCH_POS[pos] || { x: 50, y: 62 }
+    if (group.length === 1) {
+      placed.push({ ...group[0], x: base.x, y: base.y })
+    } else {
+      const gap = Math.min(16, 70 / group.length)
+      const half = (gap * (group.length - 1)) / 2
+      group.forEach((p, i) => placed.push({ ...p, x: base.x - half + i * gap, y: base.y }))
+    }
+  }
+
+  return (
+    <svg viewBox="0 0 100 148" className="w-full rounded-xl shadow-md" style={{ display: 'block' }}>
+      <rect width="100" height="148" fill="#1a7a3c" rx="6" />
+      {[0,1,2,3,4,5,6].map(i => (
+        <rect key={i} x="5" y={4 + i * 20} width="90" height="10" fill="rgba(0,0,0,0.05)" />
+      ))}
+      <rect x="5"  y="4"   width="90" height="140" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <line x1="5" y1="74" x2="95"   y2="74"       stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <circle cx="50" cy="74" r="11" fill="none"    stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <circle cx="50" cy="74" r="0.8"               fill="rgba(255,255,255,0.65)" />
+      <rect x="22" y="4"   width="56" height="22"   fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <rect x="35" y="4"   width="30" height="9"    fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <circle cx="50" cy="19"  r="0.7"              fill="rgba(255,255,255,0.65)" />
+      <rect x="40" y="1"   width="20" height="4"    fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <rect x="22" y="122" width="56" height="22"   fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <rect x="35" y="135" width="30" height="9"    fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <circle cx="50" cy="129" r="0.7"              fill="rgba(255,255,255,0.65)" />
+      <rect x="40" y="143" width="20" height="4"    fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      {placed.map(p => {
+        const c = POS_SVG_COLOR[p.position] || { fill: '#64748b', stroke: '#475569' }
+        const lastName = p.name.split(' ').at(-1)
+        const label = lastName.length > 9 ? lastName.slice(0, 8) + '…' : lastName
+        return (
+          <g key={p.id} transform={`translate(${p.x},${p.y})`}>
+            <circle r="5.8" fill="rgba(0,0,0,0.25)" cx="0.4" cy="0.6" />
+            <circle r="5.5" fill={c.fill} stroke={c.stroke} strokeWidth="0.6" />
+            <text textAnchor="middle" dominantBaseline="central" fontSize="2.6" fontWeight="700" fill="white" y="0">
+              {p.position}
+            </text>
+            <text textAnchor="middle" fontSize="3.1" fontWeight="600" y="10"
+              stroke="rgba(0,0,0,0.5)" strokeWidth="1.4" strokeLinejoin="round" paintOrder="stroke" fill="white">
+              {label}
+            </text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+const fmtMin = (m) => m % 1 !== 0 ? m.toFixed(1) : String(Math.round(m))
+
+function PitchView({ match }) {
+  const allApps = match.player_appearances || []
+  const matchLen = match.match_length_mins || 60
+
+  if (allApps.filter(a => a.position).length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">No positions recorded yet.</p>
+  }
+
+  // Collect every time boundary where the lineup could change
+  const times = [...new Set([0, ...allApps.flatMap(a => [a.time_start, a.time_end]), matchLen])]
+    .sort((a, b) => a - b)
+
+  // For each interval between consecutive boundaries, find which players are active
+  const slices = []
+  for (let i = 0; i < times.length - 1; i++) {
+    const t1 = times[i]
+    const t2 = times[i + 1]
+    const mid = (t1 + t2) / 2
+
+    // Deduplicate by player_id — last matching appearance wins
+    const activeMap = new Map()
+    for (const a of allApps) {
+      if (a.time_start <= mid && a.time_end > mid && a.position) {
+        activeMap.set(a.player_id, { id: a.player_id, name: a.players?.name ?? 'Unknown', position: a.position })
+      }
+    }
+    const active = [...activeMap.values()]
+    if (active.length === 0) continue
+
+    const key = active.slice().sort((a, b) => a.id - b.id).map(a => `${a.id}:${a.position}`).join(',')
+
+    if (slices.length > 0 && slices.at(-1).key === key) {
+      slices.at(-1).t2 = t2   // extend the existing slice
+    } else {
+      slices.push({ t1, t2, active, key })
+    }
+  }
+
+  if (slices.length === 0) {
+    return <p className="text-sm text-slate-400 py-8 text-center">No positions recorded yet.</p>
+  }
+
+  return (
+    <div className={`grid gap-6 ${slices.length === 1 ? 'max-w-xs mx-auto' : 'grid-cols-1 sm:grid-cols-2'}`}>
+      {slices.map((slice, idx) => (
+        <div key={idx} className="select-none">
+          <p className="text-center text-sm font-semibold text-slate-600 mb-2">
+            {fmtMin(slice.t1)}' – {fmtMin(slice.t2)}'
+          </p>
+          <FormationPitch players={slice.active} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─── Lineup Matrix ────────────────────────────────────────────────────────────
 
 function LineupMatrix({ match, editMode, onRefetch }) {
@@ -149,30 +296,89 @@ function LineupMatrix({ match, editMode, onRefetch }) {
   const allApps = match.player_appearances || []
   const playersInMatch = getUniquePlayersFromAppearances(allApps)
   const { players: allPlayers } = usePlayers()
+
+  const [lineupTab, setLineupTab] = useState('matrix')
   const [busy, setBusy] = useState(false)
   const [addForm, setAddForm] = useState({ player_id: '', time_start: 0, time_end: matchLen / 2, position: 'GK' })
   const [addErr, setAddErr] = useState(null)
+  const [excluded, setExcluded] = useState(new Set())
+
+  // Reset exclusions each time edit mode opens
+  useEffect(() => { if (editMode) setExcluded(new Set()) }, [editMode])
+
+  // In edit mode with no appearances yet, show every player so the user can fill in who played
+  const matrixPlayers = editMode && allApps.length === 0
+    ? (allPlayers || []).filter(p => !excluded.has(p.id)).map(p => ({ id: p.id, name: p.name }))
+    : playersInMatch
 
   const getPlayerTotalMins = (playerId) =>
     allApps.filter(a => a.player_id === playerId)
            .reduce((sum, a) => sum + (a.time_end - a.time_start), 0)
 
-  // Update or delete the appearance(s) covering a segment for a player
+  // Trim or delete each appearance so it no longer covers the given segment's time window
+  const trimOrDeleteCovering = async (covering, segment) => {
+    await Promise.all(covering.map(async (app) => {
+      const left  = app.time_start < segment.start
+      const right = app.time_end   > segment.end
+      if (left && right) {
+        await updatePlayerAppearance(app.id, { time_end: segment.start })
+        await insertPlayerAppearance({
+          player_id: app.player_id, match_id: app.match_id, position: app.position,
+          time_start: segment.end, time_end: app.time_end,
+        })
+      } else if (left) {
+        await updatePlayerAppearance(app.id, { time_end: segment.start })
+      } else if (right) {
+        await updatePlayerAppearance(app.id, { time_start: segment.end })
+      } else {
+        await deletePlayerAppearance(app.id)
+      }
+    }))
+  }
+
+  // Update or adjust the appearance(s) covering a segment for a player
   const handleCellChange = async (playerId, segment, newPos) => {
     setBusy(true)
     try {
       const covering = findCoveringAppearances(allApps, playerId, segment)
       if (newPos === '') {
-        await Promise.all(covering.map(a => deletePlayerAppearance(a.id)))
-      } else if (covering.length > 0) {
-        await updatePlayerAppearance(covering[0].id, { position: newPos })
-      } else {
+        await trimOrDeleteCovering(covering, segment)
+      } else if (covering.length === 0) {
         const slot = segmentToAppearanceSlot(segment, matchLen)
         await insertPlayerAppearance({ ...slot, player_id: playerId, match_id: match.id, position: newPos })
+      } else if (
+        covering.length === 1 &&
+        covering[0].time_start === segment.start &&
+        covering[0].time_end === segment.end
+      ) {
+        // Record already exactly matches this segment — just update position
+        await updatePlayerAppearance(covering[0].id, { position: newPos })
+      } else {
+        // Trim/split covering records to remove this segment's window, then insert a precise new record
+        await trimOrDeleteCovering(covering, segment)
+        await insertPlayerAppearance({
+          player_id: playerId, match_id: match.id, position: newPos,
+          time_start: segment.start, time_end: segment.end,
+        })
       }
       await onRefetch()
     } catch (e) { alert(e.message) }
     finally { setBusy(false) }
+  }
+
+  // Remove a player: delete all their appearances for this match, or just hide them locally
+  const handleRemovePlayer = async (playerId) => {
+    const playerApps = allApps.filter(a => a.player_id === playerId)
+    if (playerApps.length > 0) {
+      setBusy(true)
+      try {
+        await Promise.all(playerApps.map(a => deletePlayerAppearance(a.id)))
+        await onRefetch()
+      } catch (e) { alert(e.message) }
+      finally { setBusy(false) }
+    } else {
+      setExcluded(prev => new Set([...prev, playerId]))
+    }
   }
 
   // Add a custom-range appearance via the form below the matrix
@@ -196,12 +402,25 @@ function LineupMatrix({ match, editMode, onRefetch }) {
     finally { setBusy(false) }
   }
 
-  if (playersInMatch.length === 0 && !editMode) {
-    return <p className="text-sm text-slate-400 py-6 text-center">No lineup recorded yet.</p>
-  }
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      {/* Tab switcher */}
+      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+        {[['matrix', 'Matrix'], ['pitch', 'Pitch']].map(([id, label]) => (
+          <button key={id} onClick={() => setLineupTab(id)}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+              lineupTab === id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >{label}</button>
+        ))}
+      </div>
+
+      {lineupTab === 'pitch' ? (
+        <PitchView match={match} />
+      ) : matrixPlayers.length === 0 && !editMode ? (
+        <p className="text-sm text-slate-400 py-6 text-center">No lineup recorded yet.</p>
+      ) : (
+      <div className="space-y-5">
       {/* Matrix */}
       <div className="overflow-x-auto -mx-5 sm:mx-0">
         <table className="min-w-full text-sm border-collapse">
@@ -230,7 +449,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {playersInMatch.map(player => {
+            {matrixPlayers.map(player => {
               const totalMins = getPlayerTotalMins(player.id)
               return (
                 <tr key={player.id} className="hover:bg-slate-50">
@@ -242,9 +461,19 @@ function LineupMatrix({ match, editMode, onRefetch }) {
                       >
                         {player.name}
                       </Link>
-                      {totalMins > 0 && (
-                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{Math.round(totalMins)}'</span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {totalMins > 0 && (
+                          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{Math.round(totalMins)}'</span>
+                        )}
+                        {editMode && (
+                          <button
+                            onClick={() => handleRemovePlayer(player.id)}
+                            disabled={busy}
+                            className="text-slate-300 hover:text-rose-500 transition-colors disabled:opacity-40 leading-none"
+                            title="Remove player"
+                          >✕</button>
+                        )}
+                      </div>
                     </div>
                   </td>
                   {segments.map(seg => {
@@ -322,6 +551,8 @@ function LineupMatrix({ match, editMode, onRefetch }) {
           </div>
           {addErr && <p className="text-xs text-rose-600">{addErr}</p>}
         </form>
+      )}
+      </div>
       )}
     </div>
   )
@@ -558,6 +789,7 @@ export default function MatchDetail() {
   const { match, loading, error, refetch } = useMatchDetail(id)
   const [editMode, setEditMode] = useState(false)
   const [savingType, setSavingType] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
 
   const handleTypeChange = async (newType) => {
     setSavingType(true)
@@ -672,49 +904,6 @@ export default function MatchDetail() {
         <GoalsSection match={match} editMode={editMode} onRefetch={refetch} />
       </div>
 
-      {/* ── DEBUG: raw player_appearances ── */}
-      {(() => {
-        const dbgLen = match.match_length_mins || 60
-        const dbgSegs = Array.from({ length: 8 }, (_, i) => ({ start: i * dbgLen / 8, end: (i + 1) * dbgLen / 8 }))
-        return (
-          <div className="bg-slate-900 text-emerald-300 rounded-2xl p-5 font-mono text-xs overflow-x-auto">
-            <p className="text-slate-400 mb-2 font-sans font-semibold text-xs uppercase tracking-wide">
-              DEBUG — player_appearances (match_id={match.id}, match_length={dbgLen})
-            </p>
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="text-slate-400 border-b border-slate-700">
-                  {['id','player_id','name','time_start','time_end','position','segments hit'].map(h => (
-                    <th key={h} className="text-left pr-4 pb-1">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {(match.player_appearances || [])
-                  .slice()
-                  .sort((a,b) => a.player_id - b.player_id || a.time_start - b.time_start)
-                  .map(a => {
-                    const hits = dbgSegs.filter(s => a.time_start < s.end && a.time_end > s.start).map((_,i) => i)
-                    return (
-                      <tr key={a.id} className="border-b border-slate-800">
-                        <td className="pr-4 py-0.5 text-slate-400">{a.id}</td>
-                        <td className="pr-4 py-0.5">{a.player_id}</td>
-                        <td className="pr-4 py-0.5 text-slate-300">{a.players?.name ?? '?'}</td>
-                        <td className="pr-4 py-0.5">{a.time_start}</td>
-                        <td className="pr-4 py-0.5">{a.time_end}</td>
-                        <td className="pr-4 py-0.5 text-emerald-400 font-bold">{a.position}</td>
-                        <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
-                          {hits.length === 0 ? 'NONE' : `[${hits.join(',')}]`}
-                        </td>
-                      </tr>
-                    )
-                  })}
-              </tbody>
-            </table>
-          </div>
-        )
-      })()}
-
       {/* ── Star Players ── */}
       {((match.star_player_awards || []).length > 0 || editMode) && (
         <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
@@ -724,6 +913,56 @@ export default function MatchDetail() {
           <StarPlayersSection match={match} editMode={editMode} onRefetch={refetch} />
         </div>
       )}
+
+      {/* ── DEBUG: raw player_appearances ── */}
+      <div className="rounded-2xl border border-slate-200 overflow-hidden">
+        <button
+          onClick={() => setShowDebug(v => !v)}
+          className="w-full flex items-center justify-between px-5 py-3 bg-slate-100 hover:bg-slate-200 transition-colors text-xs font-semibold text-slate-500 uppercase tracking-wide"
+        >
+          <span>Debug — player_appearances</span>
+          <span>{showDebug ? '▲ Hide' : '▼ Show'}</span>
+        </button>
+        {showDebug && (() => {
+          const dbgLen = match.match_length_mins || 60
+          const dbgSegs = Array.from({ length: 8 }, (_, i) => ({ start: i * dbgLen / 8, end: (i + 1) * dbgLen / 8 }))
+          return (
+            <div className="bg-slate-900 text-emerald-300 p-5 font-mono text-xs overflow-x-auto">
+              <p className="text-slate-400 mb-3">match_id={match.id} · match_length={dbgLen}</p>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="text-slate-400 border-b border-slate-700">
+                    {['id','player_id','name','time_start','time_end','position','segments hit'].map(h => (
+                      <th key={h} className="text-left pr-4 pb-1">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {(match.player_appearances || [])
+                    .slice()
+                    .sort((a,b) => a.player_id - b.player_id || a.time_start - b.time_start)
+                    .map(a => {
+                      const hits = dbgSegs.filter(s => a.time_start < s.end && a.time_end > s.start).map((_,i) => i)
+                      return (
+                        <tr key={a.id} className="border-b border-slate-800">
+                          <td className="pr-4 py-0.5 text-slate-400">{a.id}</td>
+                          <td className="pr-4 py-0.5">{a.player_id}</td>
+                          <td className="pr-4 py-0.5 text-slate-300">{a.players?.name ?? '?'}</td>
+                          <td className="pr-4 py-0.5">{a.time_start}</td>
+                          <td className="pr-4 py-0.5">{a.time_end}</td>
+                          <td className="pr-4 py-0.5 text-emerald-400 font-bold">{a.position}</td>
+                          <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
+                            {hits.length === 0 ? 'NONE' : `[${hits.join(',')}]`}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                </tbody>
+              </table>
+            </div>
+          )
+        })()}
+      </div>
     </div>
   )
 }
