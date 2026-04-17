@@ -1,4 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
+import {
+  fetchMatches,
+  fetchMatchDetail,
+  fetchPlayers,
+  fetchPlayer,
+  fetchPlayerStats,
+  fetchAllPlayersStats,
+  fetchSeasons,
+} from '../lib/supabase'
 
 // ─── Matches ─────────────────────────────────────────────────────────────────
 
@@ -10,7 +19,6 @@ export const useMatches = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const { fetchMatches } = await import('../lib/supabase')
         setMatches(await fetchMatches())
       } catch (err) {
         setError(err.message)
@@ -33,7 +41,6 @@ export const useMatchDetail = (matchId) => {
     if (!matchId) return
     setLoading(true)
     try {
-      const { fetchMatchDetail } = await import('../lib/supabase')
       setMatch(await fetchMatchDetail(matchId))
       setError(null)
     } catch (err) {
@@ -58,7 +65,6 @@ export const usePlayers = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const { fetchPlayers } = await import('../lib/supabase')
         setPlayers(await fetchPlayers())
       } catch (err) {
         setError(err.message)
@@ -81,7 +87,6 @@ export const usePlayer = (playerId) => {
     if (!playerId) return
     const load = async () => {
       try {
-        const { fetchPlayer } = await import('../lib/supabase')
         setPlayer(await fetchPlayer(playerId))
       } catch (err) {
         setError(err.message)
@@ -105,7 +110,6 @@ export const usePlayerStats = (playerId) => {
     setLoading(true)
     const load = async () => {
       try {
-        const { fetchPlayerStats } = await import('../lib/supabase')
         setStats(await fetchPlayerStats(playerId))
       } catch (err) {
         setError(err.message)
@@ -129,7 +133,6 @@ export const useAllPlayersStats = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const { fetchAllPlayersStats } = await import('../lib/supabase')
         setData(await fetchAllPlayersStats())
       } catch (err) {
         setError(err.message)
@@ -153,7 +156,6 @@ export const useSeasons = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const { fetchSeasons } = await import('../lib/supabase')
         setSeasons(await fetchSeasons())
       } catch (err) {
         setError(err.message)

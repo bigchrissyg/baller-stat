@@ -212,8 +212,8 @@ function computePlayerRow(player, appearances, goals, awards) {
       if (grp !== 'gk' && grp !== 'def') return
       const halfLen = (match.match_length_mins || 60) / 2
       const segLen  = (match.match_length_mins || 60) / 8
-      const absStart = a.half === 'H1' ? a.time_start : a.time_start + halfLen
-      const absEnd   = a.half === 'H1' ? a.time_end   : a.time_end   + halfLen
+      const absStart = a.time_start
+      const absEnd   = a.time_end
       for (let i = 0; i < 8; i++) {
         const ss = i * segLen, se = (i + 1) * segLen
         if (absStart >= se || absEnd <= ss) continue

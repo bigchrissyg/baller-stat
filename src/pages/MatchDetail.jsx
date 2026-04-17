@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, Fragment } from 'react'
+import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useMatchDetail, usePlayers } from '../hooks/useData'
 import {
@@ -19,7 +20,7 @@ import {
   getMatchSegments,
   getPlayerSegmentPosition,
   getUniquePlayersFromAppearances,
-  findCoveringAppearance,
+  findCoveringAppearances,
   segmentToAppearanceSlot,
 } from '../lib/utils'
 import Spinner from '../components/ui/Spinner'
@@ -30,29 +31,142 @@ const MATCH_TYPES = ['League', 'Cup', 'Friendly']
 const HALVES = ['H1', 'H2']
 const QUARTERS = [1, 2, 3, 4]
 
+// ─── Position colours ─────────────────────────────────────────────────────────
+
+const POS_STYLES = {
+  GK:  { solid: 'bg-purple-600 text-white',       ghost: 'bg-purple-50 text-purple-400 border border-dashed border-purple-300' },
+  CB:  { solid: 'bg-red-600 text-white',           ghost: 'bg-red-50 text-red-400 border border-dashed border-red-300' },
+  LB:  { solid: 'bg-red-600 text-white',           ghost: 'bg-red-50 text-red-400 border border-dashed border-red-300' },
+  RB:  { solid: 'bg-red-600 text-white',           ghost: 'bg-red-50 text-red-400 border border-dashed border-red-300' },
+  CM:  { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
+  CDM: { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
+  CAM: { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
+  LM:  { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
+  RM:  { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
+  CF:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
+  LF:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
+  RF:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
+  ST:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
+}
+
+const POS_GROUPS = [
+  { label: 'GK',  positions: ['GK'] },
+  { label: 'DEF', positions: ['CB', 'LB', 'RB'] },
+  { label: 'MID', positions: ['CDM', 'CM', 'CAM', 'LM', 'RM'] },
+  { label: 'ATK', positions: ['CF', 'LF', 'RF', 'ST'] },
+]
+
+// ─── Rich position dropdown ───────────────────────────────────────────────────
+
+function PositionSelect({ value, suggested, disabled, onChange }) {
+  const [open, setOpen] = useState(false)
+  const [menuStyle, setMenuStyle] = useState({})
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+
+  const solidStyles = value ? POS_STYLES[value] : null
+
+  const openMenu = () => {
+    if (disabled) return
+    if (open) { setOpen(false); return }
+    const rect = triggerRef.current.getBoundingClientRect()
+    const menuWidth = 184
+    const left = rect.left + menuWidth > window.innerWidth ? rect.right - menuWidth : rect.left
+    setMenuStyle({ position: 'fixed', top: rect.bottom + 4, left, width: menuWidth, zIndex: 9999 })
+    setOpen(true)
+  }
+
+  const select = (pos) => {
+    setOpen(false)
+    if (pos !== value) onChange(pos)
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e) => {
+      if (!triggerRef.current?.contains(e.target) && !menuRef.current?.contains(e.target))
+        setOpen(false)
+    }
+    const onScroll = () => setOpen(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('scroll', onScroll, true)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('scroll', onScroll, true)
+    }
+  }, [open])
+
+  return (
+    <>
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={openMenu}
+        disabled={disabled}
+        className={`w-14 h-6 rounded text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center ${
+          value ? solidStyles.solid : 'text-slate-300 border border-dashed border-slate-200'
+        }`}
+      >
+        {value || ''}
+      </button>
+
+      {open && createPortal(
+        <div ref={menuRef} style={menuStyle} className="bg-white rounded-xl border border-slate-200 shadow-xl p-2 space-y-1.5">
+          <button
+            onMouseDown={() => select('')}
+            className="w-full text-left text-xs text-slate-400 hover:text-slate-600 px-2 py-0.5 rounded hover:bg-slate-50"
+          >
+            — Remove
+          </button>
+          {POS_GROUPS.map(group => (
+            <div key={group.label}>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-300 px-1 mb-0.5">{group.label}</div>
+              <div className="flex flex-wrap gap-1">
+                {group.positions.map(p => (
+                  <button
+                    key={p}
+                    onMouseDown={() => select(p)}
+                    className={`${POS_STYLES[p].solid} text-xs font-bold rounded px-2 py-0.5 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  )
+}
+
 // ─── Lineup Matrix ────────────────────────────────────────────────────────────
 
 function LineupMatrix({ match, editMode, onRefetch }) {
   const matchLen = match.match_length_mins || 60
   const segments = getMatchSegments(matchLen)
-  const playersInMatch = getUniquePlayersFromAppearances(match.player_appearances || [])
+  const allApps = match.player_appearances || []
+  const playersInMatch = getUniquePlayersFromAppearances(allApps)
   const { players: allPlayers } = usePlayers()
   const [busy, setBusy] = useState(false)
-  const [addForm, setAddForm] = useState({ player_id: '', half: 'H1', time_start: 0, time_end: matchLen / 2, position: 'GK' })
+  const [addForm, setAddForm] = useState({ player_id: '', time_start: 0, time_end: matchLen / 2, position: 'GK' })
   const [addErr, setAddErr] = useState(null)
 
-  // Inline cell change: update position or create/delete appearance
+  const getPlayerTotalMins = (playerId) =>
+    allApps.filter(a => a.player_id === playerId)
+           .reduce((sum, a) => sum + (a.time_end - a.time_start), 0)
+
+  // Update or delete the appearance(s) covering a segment for a player
   const handleCellChange = async (playerId, segment, newPos) => {
     setBusy(true)
     try {
-      const existing = findCoveringAppearance(match.player_appearances || [], playerId, segment, matchLen)
-      if (existing) {
-        if (newPos === '') {
-          await deletePlayerAppearance(existing.id)
-        } else {
-          await updatePlayerAppearance(existing.id, { position: newPos })
-        }
-      } else if (newPos !== '') {
+      const covering = findCoveringAppearances(allApps, playerId, segment)
+      if (newPos === '') {
+        await Promise.all(covering.map(a => deletePlayerAppearance(a.id)))
+      } else if (covering.length > 0) {
+        await updatePlayerAppearance(covering[0].id, { position: newPos })
+      } else {
         const slot = segmentToAppearanceSlot(segment, matchLen)
         await insertPlayerAppearance({ ...slot, player_id: playerId, match_id: match.id, position: newPos })
       }
@@ -67,19 +181,20 @@ function LineupMatrix({ match, editMode, onRefetch }) {
     if (!addForm.player_id) return
     setBusy(true); setAddErr(null)
     try {
+      const tsNum = Number(addForm.time_start)
+      const teNum = Number(addForm.time_end)
       await insertPlayerAppearance({
-        ...addForm,
+        player_id: addForm.player_id,
+        position: addForm.position,
         match_id: match.id,
-        time_start: Number(addForm.time_start),
-        time_end: Number(addForm.time_end),
+        time_start: tsNum,
+        time_end: teNum,
       })
-      setAddForm({ player_id: '', half: 'H1', time_start: 0, time_end: matchLen / 2, position: 'GK' })
+      setAddForm({ player_id: '', time_start: 0, time_end: matchLen / 2, position: 'GK' })
       await onRefetch()
     } catch (e) { setAddErr(e.message) }
     finally { setBusy(false) }
   }
-
-  const fmtMin = (m) => (m % 1 !== 0 ? m.toFixed(1) : String(Math.round(m)))
 
   if (playersInMatch.length === 0 && !editMode) {
     return <p className="text-sm text-slate-400 py-6 text-center">No lineup recorded yet.</p>
@@ -92,74 +207,74 @@ function LineupMatrix({ match, editMode, onRefetch }) {
         <table className="min-w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="sticky left-0 bg-white pl-5 sm:pl-0 pr-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap min-w-[120px]">
+              <th className="sticky left-0 bg-white pl-5 sm:pl-0 pr-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap min-w-[140px]">
                 Player
               </th>
               {segments.map(seg => (
-                <th key={seg.index} className="px-1 py-2 text-xs font-medium text-slate-400 text-center whitespace-nowrap min-w-[56px]">
-                  {seg.label}
-                </th>
+                <Fragment key={seg.index}>
+                  <th className="px-1 py-2 text-xs font-medium text-slate-400 text-center whitespace-nowrap min-w-[56px]">
+                    {seg.label}
+                  </th>
+                  {seg.index === 3 && (
+                    <th className="w-6 px-0 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center border-l border-slate-200">
+                      HT
+                    </th>
+                  )}
+                  {seg.index === 7 && (
+                    <th className="w-6 px-0 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center border-l border-slate-200">
+                      FT
+                    </th>
+                  )}
+                </Fragment>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
-            {playersInMatch.map(player => (
-              <tr key={player.id} className="hover:bg-slate-50">
-                <td className="sticky left-0 bg-inherit pl-5 sm:pl-0 pr-3 py-2">
-                  <Link
-                    to={`/players/${player.id}`}
-                    className="font-semibold text-slate-800 hover:text-emerald-600 transition-colors whitespace-nowrap text-sm"
-                  >
-                    {player.name}
-                  </Link>
-                </td>
-                {segments.map(seg => {
-                  const pos = getPlayerSegmentPosition(match.player_appearances || [], player.id, seg, matchLen)
-                  return (
-                    <td key={seg.index} className="px-1 py-2 text-center">
-                      {editMode ? (
-                        <select
-                          value={pos || ''}
-                          disabled={busy}
-                          onChange={e => handleCellChange(player.id, seg, e.target.value)}
-                          className="w-14 text-xs border border-slate-200 rounded-md py-0.5 px-0.5 text-center focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-40 bg-white"
-                        >
-                          <option value="">—</option>
-                          {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                      ) : pos ? (
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getPositionColor(pos)}`}>
-                          {pos}
-                        </span>
-                      ) : (
-                        <span className="text-slate-200 text-xs">—</span>
+            {playersInMatch.map(player => {
+              const totalMins = getPlayerTotalMins(player.id)
+              return (
+                <tr key={player.id} className="hover:bg-slate-50">
+                  <td className="sticky left-0 bg-inherit pl-5 sm:pl-0 pr-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Link
+                        to={`/players/${player.id}`}
+                        className="font-semibold text-slate-800 hover:text-emerald-600 transition-colors whitespace-nowrap text-sm"
+                      >
+                        {player.name}
+                      </Link>
+                      {totalMins > 0 && (
+                        <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{Math.round(totalMins)}'</span>
                       )}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-
-            {/* In edit mode: row for new player from any team member */}
-            {editMode && (
-              <tr className="border-t-2 border-dashed border-slate-200">
-                <td className="sticky left-0 bg-white pl-5 sm:pl-0 pr-3 py-2">
-                  <select
-                    className="text-xs border border-slate-200 rounded-md px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400 w-28"
-                    value={addForm.player_id}
-                    onChange={e => setAddForm(f => ({ ...f, player_id: e.target.value }))}
-                  >
-                    <option value="">+ Player…</option>
-                    {allPlayers.filter(p => !playersInMatch.some(pm => pm.id === p.id)).map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))}
-                  </select>
-                </td>
-                {segments.map((seg, i) => (
-                  <td key={i} className="px-1 py-2 text-center text-slate-200 text-xs">—</td>
-                ))}
-              </tr>
-            )}
+                    </div>
+                  </td>
+                  {segments.map(seg => {
+                    const pos = getPlayerSegmentPosition(allApps, player.id, seg)
+                    return (
+                      <Fragment key={seg.index}>
+                        <td className="px-1 py-2 text-center">
+                          {editMode ? (
+                            <PositionSelect
+                              value={pos || ''}
+                              suggested={null}
+                              disabled={busy}
+                              onChange={newPos => handleCellChange(player.id, seg, newPos)}
+                            />
+                          ) : pos ? (
+                            <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getPositionColor(pos)}`}>
+                              {pos}
+                            </span>
+                          ) : (
+                            <span className="text-slate-200 text-xs">—</span>
+                          )}
+                        </td>
+                        {seg.index === 3 && <td className="w-6 px-0 border-l border-slate-200 bg-slate-50" />}
+                        {seg.index === 7 && <td className="w-6 px-0 border-l border-slate-200 bg-slate-50" />}
+                      </Fragment>
+                    )
+                  })}
+                </tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -185,23 +300,15 @@ function LineupMatrix({ match, editMode, onRefetch }) {
             >
               {POSITIONS.map(p => <option key={p}>{p}</option>)}
             </select>
-            <select
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400"
-              value={addForm.half}
-              onChange={e => setAddForm(f => ({ ...f, half: e.target.value }))}
-            >
-              <option value="H1">H1</option>
-              <option value="H2">H2</option>
-            </select>
             <input
-              type="number" min={0} max={matchLen / 2} placeholder="Start"
+              type="number" min={0} max={matchLen} placeholder="Start"
               className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs w-16 focus:outline-none focus:ring-1 focus:ring-emerald-400"
               value={addForm.time_start}
               onChange={e => setAddForm(f => ({ ...f, time_start: e.target.value }))}
             />
             <span className="text-slate-400 text-xs">to</span>
             <input
-              type="number" min={1} max={matchLen / 2} placeholder="End"
+              type="number" min={1} max={matchLen} placeholder="End"
               className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs w-16 focus:outline-none focus:ring-1 focus:ring-emerald-400"
               value={addForm.time_end}
               onChange={e => setAddForm(f => ({ ...f, time_end: e.target.value }))}
@@ -564,6 +671,49 @@ export default function MatchDetail() {
         <h2 className="text-base font-bold text-slate-800 mb-4">Goals &amp; Events</h2>
         <GoalsSection match={match} editMode={editMode} onRefetch={refetch} />
       </div>
+
+      {/* ── DEBUG: raw player_appearances ── */}
+      {(() => {
+        const dbgLen = match.match_length_mins || 60
+        const dbgSegs = Array.from({ length: 8 }, (_, i) => ({ start: i * dbgLen / 8, end: (i + 1) * dbgLen / 8 }))
+        return (
+          <div className="bg-slate-900 text-emerald-300 rounded-2xl p-5 font-mono text-xs overflow-x-auto">
+            <p className="text-slate-400 mb-2 font-sans font-semibold text-xs uppercase tracking-wide">
+              DEBUG — player_appearances (match_id={match.id}, match_length={dbgLen})
+            </p>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="text-slate-400 border-b border-slate-700">
+                  {['id','player_id','name','time_start','time_end','position','segments hit'].map(h => (
+                    <th key={h} className="text-left pr-4 pb-1">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(match.player_appearances || [])
+                  .slice()
+                  .sort((a,b) => a.player_id - b.player_id || a.time_start - b.time_start)
+                  .map(a => {
+                    const hits = dbgSegs.filter(s => a.time_start < s.end && a.time_end > s.start).map((_,i) => i)
+                    return (
+                      <tr key={a.id} className="border-b border-slate-800">
+                        <td className="pr-4 py-0.5 text-slate-400">{a.id}</td>
+                        <td className="pr-4 py-0.5">{a.player_id}</td>
+                        <td className="pr-4 py-0.5 text-slate-300">{a.players?.name ?? '?'}</td>
+                        <td className="pr-4 py-0.5">{a.time_start}</td>
+                        <td className="pr-4 py-0.5">{a.time_end}</td>
+                        <td className="pr-4 py-0.5 text-emerald-400 font-bold">{a.position}</td>
+                        <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
+                          {hits.length === 0 ? 'NONE' : `[${hits.join(',')}]`}
+                        </td>
+                      </tr>
+                    )
+                  })}
+              </tbody>
+            </table>
+          </div>
+        )
+      })()}
 
       {/* ── Star Players ── */}
       {((match.star_player_awards || []).length > 0 || editMode) && (

@@ -21,23 +21,31 @@ export const fetchMatches = async () => {
 }
 
 export const fetchMatchDetail = async (matchId) => {
-  const { data, error } = await supabase
-    .from('matches')
-    .select(`
-      *,
-      seasons(name),
-      player_appearances(*, players(name)),
-      goals(
+  const [matchRes, appsRes] = await Promise.all([
+    supabase
+      .from('matches')
+      .select(`
         *,
-        players:scorer_player_id(name),
-        players_assist:assist_player_id(name)
-      ),
-      star_player_awards(*, players(name))
-    `)
-    .eq('id', matchId)
-    .single()
-  if (error) throw error
-  return data
+        seasons(name),
+        goals(
+          *,
+          players:scorer_player_id(name),
+          players_assist:assist_player_id(name)
+        ),
+        star_player_awards(*, players(name))
+      `)
+      .eq('id', matchId)
+      .single(),
+    supabase
+      .from('player_appearances')
+      .select('*, players(name)')
+      .eq('match_id', matchId)
+      .order('player_id')
+      .order('time_start'),
+  ])
+  if (matchRes.error) throw matchRes.error
+  if (appsRes.error) throw appsRes.error
+  return { ...matchRes.data, player_appearances: appsRes.data ?? [] }
 }
 
 export const updateMatch = async (id, data) => {
@@ -193,7 +201,7 @@ export const deleteStarPlayerAward = async (id) => {
 export const fetchAllPlayersStats = async () => {
   const [appsRes, goalsRes, awardsRes, playersRes] = await Promise.all([
     supabase.from('player_appearances').select(
-      `id, player_id, match_id, position, half, time_start, time_end,
+      `id, player_id, match_id, position, time_start, time_end,
        matches(match_date, histon_score, opposition_score, match_length_mins)`
     ),
     supabase.from('goals').select('*'),

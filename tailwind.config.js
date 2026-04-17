@@ -5,7 +5,17 @@ export default {
     "./src/**/*.{js,jsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        hornets: {
+          'primary': '#2A3151',
+          'secondary': '#4D755D',
+          'tertiary': '#864343',
+          'quaternary': '#B25484',
+          'quinary': '#DAAF56',
+        },
+      },
+    },
   },
   plugins: [],
 }

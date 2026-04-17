@@ -5,7 +5,8 @@
       "Bash(where python:*)",
       "Bash(where py:*)",
       "Read(//usr/**)",
-      "Bash(ls /c/Python*)"
+      "Bash(ls /c/Python*)",
+      "Bash(npm run:*)"
     ]
   }
 }

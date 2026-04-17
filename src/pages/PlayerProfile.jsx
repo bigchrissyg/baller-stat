@@ -4,6 +4,7 @@ import { calculatePlayerAggregateStats } from '../lib/supabase'
 import { formatDate, getPositionColor, getMatchResult, getInitials } from '../lib/utils'
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
+import PlayerStatsCharts from '../components/PlayerStatsCharts'
 
 export default function PlayerProfile() {
   const { id } = useParams()
@@ -74,31 +75,11 @@ export default function PlayerProfile() {
         <StatCard label="Minutes"     value={`${agg.totalMinutes}'`} accent="violet" />
       </div>
 
-      {/* ── Position breakdown ── */}
-      {posBreakdown.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
-          <h2 className="text-base font-bold text-slate-800 mb-4">Positions Played</h2>
-          <div className="space-y-3">
-            {posBreakdown.map(({ pos, mins }) => {
-              const pct = agg.totalMinutes > 0 ? (mins / agg.totalMinutes) * 100 : 0
-              return (
-                <div key={pos}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getPositionColor(pos)}`}>{pos}</span>
-                    <span className="text-sm text-slate-500">{mins}' <span className="text-slate-300">({Math.round(pct)}%)</span></span>
-                  </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-400 rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
+      {/* ── Statistics with Charts ── */}
+      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
+        <h2 className="text-base font-bold text-slate-800 mb-6">Statistics & Analysis</h2>
+        <PlayerStatsCharts agg={agg} posBreakdown={posBreakdown} />
+      </div>
 
       {/* ── Match history ── */}
       {appearances.length > 0 && (
@@ -111,7 +92,6 @@ export default function PlayerProfile() {
                   <th className="text-left pl-5 sm:pl-0 pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Date</th>
                   <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Match</th>
                   <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Pos</th>
-                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Half</th>
                   <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Time</th>
                   <th className="text-right pr-5 sm:pr-0 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Result</th>
                 </tr>
@@ -140,7 +120,6 @@ export default function PlayerProfile() {
                           {app.position}
                         </span>
                       </td>
-                      <td className="pr-4 py-3 text-slate-500">{app.half}</td>
                       <td className="pr-4 py-3 text-slate-500 whitespace-nowrap">
                         {app.time_start}'–{app.time_end}' <span className="text-slate-300">({mins}')</span>
                       </td>
