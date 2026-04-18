@@ -3,8 +3,9 @@ main = "src/worker.ts"
 compatibility_date = "2024-01-01"
 
 # Environment variables (configured in Cloudflare dashboard)
-[env.production]
-vars = { VITE_SUPABASE_URL = "", VITE_SUPABASE_ANON_KEY = "" }
+[vars]
+VITE_SUPABASE_URL = ""
+VITE_SUPABASE_ANON_KEY = ""
 
 [build]
 command = "npm run build"

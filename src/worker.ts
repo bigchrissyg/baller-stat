@@ -10,36 +10,44 @@ export default {
 
     // For SPA routing: serve index.html for any path that doesn't have a file extension
     // This enables client-side routing for React Router
-    if (!pathname.includes('.') || pathname === '/') {
-      // Fetch the index.html from the static assets
-      const page = await fetch(new URL('/index.html', url.origin))
+    if (!pathname.includes('.') || pathname === '/' || pathname.startsWith('/matches/') || pathname.startsWith('/players/')) {
+      try {
+        // In service worker format, assets are available via global ASSETS object
+        const indexResponse = await ASSETS.fetch(new Request(`${url.origin}/index.html`, request))
 
-      if (page.ok) {
-        let html = await page.text()
+        if (indexResponse.ok) {
+          let html = await indexResponse.text()
 
-        // Inject environment variables into the HTML
-        const envScript = `
-          <script>
-            window.__ENV__ = {
-              VITE_SUPABASE_URL: "${env.VITE_SUPABASE_URL}",
-              VITE_SUPABASE_ANON_KEY: "${env.VITE_SUPABASE_ANON_KEY}"
-            };
-          </script>
-        `
-        html = html.replace('</head>', `${envScript}</head>`)
+          // Inject environment variables into the HTML
+          const envScript = `
+            <script>
+              window.__ENV__ = {
+                VITE_SUPABASE_URL: "${env.VITE_SUPABASE_URL}",
+                VITE_SUPABASE_ANON_KEY: "${env.VITE_SUPABASE_ANON_KEY}"
+              };
+            </script>
+          `
+          html = html.replace('</head>', `${envScript}</head>`)
 
-        return new Response(html, {
-          status: 200,
-          headers: {
-            'Content-Type': 'text/html; charset=utf-8',
-            ...Object.fromEntries(page.headers.entries()),
-          },
-        })
+          return new Response(html, {
+            status: 200,
+            headers: {
+              'Content-Type': 'text/html; charset=utf-8',
+            },
+          })
+        }
+      } catch (e) {
+        console.error('Error serving index.html:', e)
       }
     }
 
-    // For all other requests, let Cloudflare serve the static assets directly
-    return fetch(request)
+    // For all other requests (CSS, JS, images, etc.), let Cloudflare serve them directly
+    try {
+      return await ASSETS.fetch(request)
+    } catch (e) {
+      console.error('Error serving asset:', e)
+      return new Response('Not found', { status: 404 })
+    }
   },
 }
 
