@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,6 +7,39 @@
 
 @layer base {
   body {
-    @apply font-sans antialiased bg-slate-50 text-slate-900;
+    font-family: system-ui, -apple-system, sans-serif;
+    background-color: #f5f4ed;
+    color: #141413;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: Georgia, serif;
+    font-weight: bold;
+  }
+  
+  h1 { font-size: 2.25rem; }
+  h2 { font-size: 1.875rem; }
+  h3 { font-size: 1.5rem; }
+  h4 { font-size: 1.25rem; }
+  
+  a {
+    color: #c96442;
+    transition: opacity 0.2s ease;
+  }
+  
+  a:hover {
+    opacity: 0.8;
+  }
+  
+  input:focus,
+  select:focus,
+  textarea:focus {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    ring: 2px;
+    ring-color: #c96442;
+    ring-offset-width: 0;
   }
 }

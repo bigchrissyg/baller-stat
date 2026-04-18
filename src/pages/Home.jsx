@@ -9,9 +9,9 @@ import Spinner from '../components/ui/Spinner'
 const MATCH_TYPES = ['All', 'League', 'Cup', 'Friendly']
 
 const RESULT_PILL = {
-  W: 'bg-emerald-500 text-white',
-  D: 'bg-amber-400 text-white',
-  L: 'bg-rose-500 text-white',
+  W: 'bg-neutral-accent text-neutral-bg',
+  D: 'bg-neutral-muted/40 text-neutral-fg',
+  L: 'bg-hornets-tertiary text-neutral-bg',
 }
 
 // ─── Add Fixture Modal ────────────────────────────────────────────────────────
@@ -43,52 +43,52 @@ function AddFixtureModal({ onClose, onCreated }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <h2 className="text-lg font-semibold text-slate-900">Add Fixture</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+      <div className="bg-neutral-card rounded-2xl shadow-2xl w-full max-w-md">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-border">
+          <h2 className="text-lg font-semibold text-neutral-fg">Add Fixture</h2>
+          <button onClick={onClose} className="text-neutral-muted hover:text-neutral-fg text-xl leading-none">&times;</button>
         </div>
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Opposition *</label>
+            <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-1">Opposition *</label>
             <input
-              className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="w-full border border-neutral-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
               value={form.opposition} onChange={e => set('opposition', e.target.value)}
               placeholder="e.g. Arsenal FC" required
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Date *</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-1">Date *</label>
               <input type="date"
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full border border-neutral-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
                 value={form.match_date} onChange={e => set('match_date', e.target.value)} required
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Duration (mins)</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-1">Duration (mins)</label>
               <input type="number" min={10} max={120}
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full border border-neutral-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
                 value={form.match_length_mins} onChange={e => set('match_length_mins', e.target.value)}
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Type</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-1">Type</label>
               <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full border border-neutral-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
                 value={form.match_type} onChange={e => set('match_type', e.target.value)}
               >
                 <option>League</option><option>Cup</option><option>Friendly</option>
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Venue</label>
-              <div className="flex rounded-lg overflow-hidden border border-slate-200">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-1">Venue</label>
+              <div className="flex rounded-lg overflow-hidden border border-neutral-border">
                 {['H', 'A'].map(v => (
                   <button key={v} type="button" onClick={() => set('location', v)}
-                    className={`flex-1 py-2 text-sm font-medium transition-colors ${form.location === v ? 'bg-emerald-500 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                    className={`flex-1 py-2 text-sm font-medium transition-colors ${form.location === v ? 'bg-neutral-accent text-neutral-bg' : 'bg-neutral-card text-neutral-fg/70 hover:bg-neutral-secondary'}`}
                   >{v === 'H' ? 'Home' : 'Away'}</button>
                 ))}
               </div>
@@ -96,9 +96,9 @@ function AddFixtureModal({ onClose, onCreated }) {
           </div>
           {seasons.length > 0 && (
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Season</label>
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-1">Season</label>
               <select
-                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                className="w-full border border-neutral-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
                 value={form.season_id} onChange={e => set('season_id', e.target.value)}
               >
                 <option value="">— Select season —</option>
@@ -106,12 +106,12 @@ function AddFixtureModal({ onClose, onCreated }) {
               </select>
             </div>
           )}
-          {err && <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">{err}</p>}
+          {err && <p className="text-sm text-hornets-tertiary bg-hornets-tertiary/10 rounded-lg px-3 py-2">{err}</p>}
           <div className="flex gap-3 pt-2">
             <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 rounded-lg border border-slate-200 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors">Cancel</button>
+              className="flex-1 py-2.5 rounded-lg border border-neutral-border text-sm font-medium text-neutral-fg/70 hover:bg-neutral-secondary transition-colors">Cancel</button>
             <button type="submit" disabled={saving}
-              className="flex-1 py-2.5 rounded-lg bg-emerald-500 text-white text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50">
+              className="flex-1 py-2.5 rounded-lg bg-neutral-accent text-neutral-bg text-sm font-semibold hover:bg-neutral-accent/90 transition-colors disabled:opacity-50">
               {saving ? 'Creating…' : 'Create Fixture'}
             </button>
           </div>
@@ -131,39 +131,39 @@ function FixtureRow({ match }) {
   return (
     <button
       onClick={() => navigate(`/matches/${match.id}`)}
-      className="w-full text-left bg-white rounded-xl border border-slate-100 shadow-sm hover:shadow-md hover:border-emerald-200 transition-all p-4 sm:p-5 flex items-center gap-4"
+      className="w-full text-left bg-neutral-card rounded-xl border border-neutral-border shadow-sm hover:shadow-md hover:border-neutral-accent/30 transition-all p-4 sm:p-5 flex items-center gap-4"
     >
       <div className="hidden sm:block w-16 text-center shrink-0">
-        <p className="text-xs text-slate-400 font-medium uppercase tracking-wide">
+        <p className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
           {match.match_date ? new Date(match.match_date).toLocaleDateString('en-GB', { month: 'short' }) : '—'}
         </p>
-        <p className="text-xl font-bold text-slate-800 leading-none">
+        <p className="text-xl font-bold text-neutral-fg leading-none">
           {match.match_date ? new Date(match.match_date).getDate() : '—'}
         </p>
       </div>
-      <div className="hidden sm:block w-px h-10 bg-slate-100 shrink-0" />
+      <div className="hidden sm:block w-px h-10 bg-neutral-border shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
-          <span className="sm:hidden text-xs text-slate-400">{formatDateShort(match.match_date)}</span>
+          <span className="sm:hidden text-xs text-neutral-muted">{formatDateShort(match.match_date)}</span>
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getMatchTypeColor(match.match_type)}`}>{match.match_type}</span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${match.location === 'H' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${match.location === 'H' ? 'bg-hornets-secondary/20 text-hornets-secondary' : 'bg-hornets-tertiary/20 text-hornets-tertiary'}`}>
             {match.location === 'H' ? 'Home' : 'Away'}
           </span>
         </div>
-        <p className="text-base font-semibold text-slate-800 truncate">vs {match.opposition}</p>
-        <p className="text-xs text-slate-400 mt-0.5">{match.seasons?.name}</p>
+        <p className="text-base font-semibold text-neutral-fg truncate">vs {match.opposition}</p>
+        <p className="text-xs text-neutral-muted mt-0.5">{match.seasons?.name}</p>
       </div>
       <div className="shrink-0 text-right">
         {hasScore ? (
           <>
-            <p className="text-xl font-bold text-slate-800 leading-none">{match.histon_score}–{match.opposition_score}</p>
-            <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${RESULT_PILL[result] || 'bg-slate-100 text-slate-600'}`}>{result}</span>
+            <p className="text-xl font-bold text-neutral-fg leading-none">{match.histon_score}–{match.opposition_score}</p>
+            <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${RESULT_PILL[result] || 'bg-neutral-secondary text-neutral-fg'}`}>{result}</span>
           </>
         ) : (
-          <span className="text-sm font-medium text-slate-400">Upcoming</span>
+          <span className="text-sm font-medium text-neutral-muted">Upcoming</span>
         )}
       </div>
-      <svg className="w-4 h-4 text-slate-300 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg className="w-4 h-4 text-neutral-muted/50 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
     </button>
@@ -260,11 +260,11 @@ function computePlayerRow(player, appearances, goals, awards) {
 const fmtDec = (n, dp = 2) => Number(n).toFixed(dp)
 const fmtMin = (n) => n > 0 ? `${Math.round(n)}'` : '—'
 
-// Heatmap colour: emerald tint, intensity 0–0.55 scaled to max
+// Heatmap colour: warm terracotta tint, intensity 0–0.55 scaled to max
 const heatBg = (val, max) => {
   if (!max || max === 0 || val <= 0) return undefined
   const intensity = Math.min(val / max, 1) * 0.55
-  return { backgroundColor: `rgba(16,185,129,${intensity})` }
+  return { backgroundColor: `rgba(201, 100, 66, ${intensity})` }
 }
 
 const COLS = [
@@ -327,18 +327,18 @@ function PlayerStatsTable({ data }) {
   if (rows.length === 0) return null
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
-      <div className="px-5 sm:px-6 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 className="text-base font-bold text-slate-800">Player Statistics</h2>
+    <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm overflow-hidden">
+      <div className="px-5 sm:px-6 py-4 border-b border-neutral-border flex items-center justify-between">
+        <h2 className="text-base font-bold text-neutral-fg">Player Statistics</h2>
         {!hasTimingData && (
-          <span className="text-xs text-slate-400">CS columns require goal timing data</span>
+          <span className="text-xs text-neutral-muted">CS columns require goal timing data</span>
         )}
       </div>
       <div className="overflow-x-auto">
         <table className="min-w-full text-xs">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-100">
-              <th className="sticky left-0 bg-slate-50 z-10 text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-500 whitespace-nowrap min-w-[130px]">
+            <tr className="bg-neutral-secondary border-b border-neutral-border">
+              <th className="sticky left-0 bg-neutral-secondary z-10 text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[130px]">
                 Player
               </th>
               {COLS.map(col => (
@@ -348,8 +348,8 @@ function PlayerStatsTable({ data }) {
                   onClick={() => toggleSort(col.key)}
                   className={`px-2 py-3 text-center font-semibold uppercase tracking-wide whitespace-nowrap cursor-pointer select-none transition-colors ${
                     sortKey === col.key
-                      ? 'text-emerald-600 bg-emerald-50'
-                      : 'text-slate-400 hover:text-slate-600'
+                      ? 'text-neutral-accent bg-neutral-accent/10'
+                      : 'text-neutral-muted hover:text-neutral-fg'
                   } ${col.timingNeeded && !hasTimingData ? 'opacity-40' : ''}`}
                 >
                   {col.label}
@@ -360,11 +360,11 @@ function PlayerStatsTable({ data }) {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-50">
+          <tbody className="divide-y divide-neutral-border">
             {sorted.map((row, ri) => (
-              <tr key={row.id} className="hover:bg-slate-50 transition-colors group">
-                <td className="sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-10 px-4 py-2.5 font-semibold text-slate-800 whitespace-nowrap">
-                  <a href={`/players/${row.id}`} className="hover:text-emerald-600 transition-colors">{row.name}</a>
+              <tr key={row.id} className="hover:bg-neutral-secondary/50 transition-colors group">
+                <td className="sticky left-0 bg-neutral-card group-hover:bg-neutral-secondary/50 transition-colors z-10 px-4 py-2.5 font-semibold text-neutral-fg whitespace-nowrap">
+                  <a href={`/players/${row.id}`} className="hover:text-neutral-accent transition-colors">{row.name}</a>
                 </td>
                 {COLS.map(col => {
                   const val = row[col.key]
@@ -375,7 +375,7 @@ function PlayerStatsTable({ data }) {
                     <td
                       key={col.key}
                       style={style}
-                      className={`px-2 py-2.5 text-center tabular-nums text-slate-700 whitespace-nowrap ${isTimingCol ? 'opacity-30' : ''}`}
+                      className={`px-2 py-2.5 text-center tabular-nums text-neutral-fg/80 whitespace-nowrap ${isTimingCol ? 'opacity-30' : ''}`}
                     >
                       {col.fmt(val)}
                     </td>
@@ -386,7 +386,7 @@ function PlayerStatsTable({ data }) {
           </tbody>
         </table>
       </div>
-      <div className="px-5 sm:px-6 py-3 border-t border-slate-100 flex flex-wrap gap-4 text-xs text-slate-400">
+      <div className="px-5 sm:px-6 py-3 border-t border-neutral-border flex flex-wrap gap-4 text-xs text-neutral-muted">
         <span>Click column headers to sort</span>
         <span>· Heatmap intensity = relative strength within the squad</span>
       </div>
@@ -406,7 +406,7 @@ export default function Home() {
   if (loading) return <div className="max-w-5xl mx-auto px-4 py-8"><Spinner message="Loading season data…" /></div>
   if (error) return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 text-sm">{error}</div>
+      <div className="bg-hornets-tertiary/10 border border-hornets-tertiary/30 rounded-xl p-4 text-hornets-tertiary text-sm">{error}</div>
     </div>
   )
 
@@ -433,7 +433,7 @@ export default function Home() {
       {/* ── Season at a Glance ── */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-slate-800">Season at a Glance</h2>
+          <h2 className="text-lg font-bold text-neutral-fg">Season at a Glance</h2>
           {recentForm.length > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-400 mr-1">Form</span>
@@ -444,14 +444,14 @@ export default function Home() {
           )}
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <StatCard label="Played"        value={played.length} accent="slate" />
-          <StatCard label="Won"           value={wins}   accent="emerald" sub={`${draws}D · ${losses}L`} />
-          <StatCard label="Goals For"     value={gf}     accent="blue" />
-          <StatCard label="Goals Against" value={ga}     accent="rose" />
-          <StatCard label="Clean Sheets"  value={cs}     accent="violet" />
+          <StatCard label="Played"        value={played.length} accent="accent" />
+          <StatCard label="Won"           value={wins}   accent="primary" sub={`${draws}D · ${losses}L`} />
+          <StatCard label="Goals For"     value={gf}     accent="secondary" />
+          <StatCard label="Goals Against" value={ga}     accent="tertiary" />
+          <StatCard label="Clean Sheets"  value={cs}     accent="quaternary" />
           <StatCard label="Goal Diff"
             value={gf - ga >= 0 ? `+${gf - ga}` : gf - ga}
-            accent={gf - ga >= 0 ? 'emerald' : 'rose'}
+            accent={gf - ga >= 0 ? 'secondary' : 'tertiary'}
           />
         </div>
       </section>
@@ -459,18 +459,18 @@ export default function Home() {
       {/* ── Fixtures ── */}
       <section>
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <div className="flex items-center gap-1 bg-white border border-slate-100 rounded-xl p-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-neutral-card border border-neutral-border rounded-xl p-1 shadow-sm">
             {MATCH_TYPES.map(t => (
               <button key={t} onClick={() => setFilter(t)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filter === t ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 hover:text-slate-800'
+                  filter === t ? 'bg-neutral-accent text-neutral-bg shadow-sm' : 'text-neutral-muted hover:text-neutral-fg'
                 }`}
               >{t}</button>
             ))}
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-semibold rounded-xl transition-colors shadow-sm"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -479,7 +479,7 @@ export default function Home() {
           </button>
         </div>
         {filtered.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-sm">
+          <div className="text-center py-16 text-neutral-muted text-sm">
             No {filter !== 'All' ? filter.toLowerCase() : ''} fixtures found
           </div>
         ) : (
@@ -492,7 +492,7 @@ export default function Home() {
       {/* ── Player Stats Table ── */}
       <section>
         {statsLoading ? (
-          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
+          <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-8">
             <Spinner message="Loading player statistics…" />
           </div>
         ) : statsData ? (

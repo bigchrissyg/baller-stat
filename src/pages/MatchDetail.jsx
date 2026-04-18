@@ -34,19 +34,19 @@ const QUARTERS = [1, 2, 3, 4]
 // ─── Position colours ─────────────────────────────────────────────────────────
 
 const POS_STYLES = {
-  GK:  { solid: 'bg-purple-600 text-white',       ghost: 'bg-purple-50 text-purple-400 border border-dashed border-purple-300' },
-  CB:  { solid: 'bg-red-600 text-white',           ghost: 'bg-red-50 text-red-400 border border-dashed border-red-300' },
-  LB:  { solid: 'bg-red-600 text-white',           ghost: 'bg-red-50 text-red-400 border border-dashed border-red-300' },
-  RB:  { solid: 'bg-red-600 text-white',           ghost: 'bg-red-50 text-red-400 border border-dashed border-red-300' },
-  CM:  { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
-  CDM: { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
-  CAM: { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
-  LM:  { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
-  RM:  { solid: 'bg-yellow-400 text-yellow-900',   ghost: 'bg-yellow-50 text-yellow-500 border border-dashed border-yellow-300' },
-  CF:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
-  LF:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
-  RF:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
-  ST:  { solid: 'bg-green-600 text-white',          ghost: 'bg-green-50 text-green-500 border border-dashed border-green-300' },
+  GK:  { solid: 'bg-purple-500 text-white',       ghost: 'bg-purple-100 text-purple-600 border border-dashed border-purple-400' },
+  CB:  { solid: 'bg-hornets-tertiary text-white',           ghost: 'bg-hornets-tertiary/10 text-hornets-tertiary border border-dashed border-hornets-tertiary' },
+  LB:  { solid: 'bg-hornets-tertiary text-white',           ghost: 'bg-hornets-tertiary/10 text-hornets-tertiary border border-dashed border-hornets-tertiary' },
+  RB:  { solid: 'bg-hornets-tertiary text-white',           ghost: 'bg-hornets-tertiary/10 text-hornets-tertiary border border-dashed border-hornets-tertiary' },
+  CM:  { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
+  CDM: { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
+  CAM: { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
+  LM:  { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
+  RM:  { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
+  CF:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
+  LF:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
+  RF:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
+  ST:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
 }
 
 const POS_GROUPS = [
@@ -104,29 +104,29 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
         onClick={openMenu}
         disabled={disabled}
         className={`w-14 h-6 rounded text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center ${
-          value ? solidStyles.solid : 'text-slate-300 border border-dashed border-slate-200'
+          value ? solidStyles.solid : 'text-neutral-muted border border-dashed border-neutral-border'
         }`}
       >
         {value || ''}
       </button>
 
       {open && createPortal(
-        <div ref={menuRef} style={menuStyle} className="bg-white rounded-xl border border-slate-200 shadow-xl p-2 space-y-1.5">
+        <div ref={menuRef} style={menuStyle} className="bg-neutral-card rounded-xl border border-neutral-border shadow-xl p-2 space-y-1.5">
           <button
             onMouseDown={() => select('')}
-            className="w-full text-left text-xs text-slate-400 hover:text-slate-600 px-2 py-0.5 rounded hover:bg-slate-50"
+            className="w-full text-left text-xs text-neutral-muted hover:text-neutral-fg px-2 py-0.5 rounded hover:bg-neutral-secondary"
           >
             — Remove
           </button>
           {POS_GROUPS.map(group => (
             <div key={group.label}>
-              <div className="text-[9px] font-bold uppercase tracking-widest text-slate-300 px-1 mb-0.5">{group.label}</div>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-neutral-muted px-1 mb-0.5">{group.label}</div>
               <div className="flex flex-wrap gap-1">
                 {group.positions.map(p => (
                   <button
                     key={p}
                     onMouseDown={() => select(p)}
-                    className={`${POS_STYLES[p].solid} text-xs font-bold rounded px-2 py-0.5 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-slate-400' : ''}`}
+                    className={`${POS_STYLES[p].solid} text-xs font-bold rounded px-2 py-0.5 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-neutral-muted' : ''}`}
                   >
                     {p}
                   </button>
@@ -147,12 +147,12 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
 // GK defends top goal (low y), attackers push toward bottom (high y).
 const PITCH_POS = {
   GK:  { x: 50, y: 20 },
-  LB:  { x: 20, y: 40 }, CB:  { x: 50, y: 40 }, RB:  { x: 80, y: 40 },
-  CDM: { x: 50, y: 60 },
-  LM:  { x: 18, y: 90 }, CM:  { x: 50, y: 70 }, RM:  { x: 80, y: 90 },
-  CAM: { x: 50, y: 105 },
-  LF:  { x: 22, y: 120 }, CF:  { x: 50, y: 120 }, RF:  { x: 78, y: 120 },
-  ST:  { x: 50, y: 120 },
+  LB:  { x: 80, y: 40 }, CB:  { x: 50, y: 40 }, RB:  { x: 20, y: 40 },
+  CDM: { x: 50, y: 65 },
+  LM:  { x: 80, y: 90 }, CM:  { x: 50, y: 80 }, RM:  { x: 18, y: 90 },
+  CAM: { x: 50, y: 100 },
+  LF:  { x: 78, y: 130 }, CF:  { x: 50, y: 120 }, RF:  { x: 22, y: 120 },
+  ST:  { x: 50, y: 130 },
 }
 
 const POS_SVG_COLOR = {
@@ -232,12 +232,69 @@ function FormationPitch({ players }) {
 
 const fmtMin = (m) => m % 1 !== 0 ? m.toFixed(1) : String(Math.round(m))
 
+// Show substitutions and position changes between slices
+function SubstitutionsSummary({ prevSlice, currentSlice }) {
+  if (!prevSlice) return null
+
+  const prevMap = new Map(prevSlice.active.map(p => [p.id, p]))
+  const currMap = new Map(currentSlice.active.map(p => [p.id, p]))
+
+  const subOff = prevSlice.active.filter(p => !currMap.has(p.id))
+  const subOn = currentSlice.active.filter(p => !prevMap.has(p.id))
+  const positionChanges = currentSlice.active.filter(p => prevMap.has(p.id) && prevMap.get(p.id).position !== p.position)
+
+  if (subOff.length === 0 && subOn.length === 0 && positionChanges.length === 0) {
+    return null
+  }
+
+  return (
+    <div className="mt-3 pt-3 border-t border-neutral-border text-xs space-y-1.5">
+      {subOff.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-start">
+          <span className="text-neutral-muted font-semibold">Off:</span>
+          <div className="flex flex-wrap gap-1">
+            {subOff.map(p => (
+              <span key={p.id} className="bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                {p.name} <span className="font-semibold">← {p.position}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {subOn.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-start">
+          <span className="text-neutral-muted font-semibold">On:</span>
+          <div className="flex flex-wrap gap-1">
+            {subOn.map(p => (
+              <span key={p.id} className="bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                {p.name} <span className="font-semibold">→ {currMap.get(p.id).position}</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {positionChanges.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-start">
+          <span className="text-neutral-muted font-semibold">Position:</span>
+          <div className="flex flex-wrap gap-1">
+            {positionChanges.map(p => (
+              <span key={p.id} className="bg-hornets-secondary/20 text-hornets-secondary px-2 py-0.5 rounded">
+                {p.name} ({prevMap.get(p.id).position} → {p.position})
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PitchView({ match }) {
   const allApps = match.player_appearances || []
   const matchLen = match.match_length_mins || 60
 
   if (allApps.filter(a => a.position).length === 0) {
-    return <p className="text-sm text-slate-400 py-8 text-center">No positions recorded yet.</p>
+    return <p className="text-sm text-neutral-muted py-8 text-center">No positions recorded yet.</p>
   }
 
   // Collect every time boundary where the lineup could change
@@ -271,17 +328,18 @@ function PitchView({ match }) {
   }
 
   if (slices.length === 0) {
-    return <p className="text-sm text-slate-400 py-8 text-center">No positions recorded yet.</p>
+    return <p className="text-sm text-neutral-muted py-8 text-center">No positions recorded yet.</p>
   }
 
   return (
     <div className={`grid gap-6 ${slices.length === 1 ? 'max-w-xs mx-auto' : 'grid-cols-1 sm:grid-cols-2'}`}>
       {slices.map((slice, idx) => (
         <div key={idx} className="select-none">
-          <p className="text-center text-sm font-semibold text-slate-600 mb-2">
+          <p className="text-center text-sm font-semibold text-neutral-fg/70 mb-2">
             {fmtMin(slice.t1)}' – {fmtMin(slice.t2)}'
           </p>
           <FormationPitch players={slice.active} />
+          <SubstitutionsSummary prevSlice={idx > 0 ? slices[idx - 1] : null} currentSlice={slice} />
         </div>
       ))}
     </div>
@@ -500,11 +558,11 @@ function LineupMatrix({ match, editMode, onRefetch }) {
   return (
     <div className="space-y-4">
       {/* Tab switcher */}
-      <div className="flex gap-1 bg-slate-100 rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-neutral-secondary rounded-lg p-1 w-fit">
         {[['matrix', 'Matrix'], ['pitch', 'Pitch']].map(([id, label]) => (
           <button key={id} onClick={() => setLineupTab(id)}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-              lineupTab === id ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              lineupTab === id ? 'bg-neutral-card text-neutral-fg shadow-sm' : 'text-neutral-muted hover:text-neutral-fg'
             }`}
           >{label}</button>
         ))}
@@ -513,7 +571,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
       {lineupTab === 'pitch' ? (
         <PitchView match={match} />
       ) : matrixPlayers.length === 0 && !editMode ? (
-        <p className="text-sm text-slate-400 py-6 text-center">No lineup recorded yet.</p>
+        <p className="text-sm text-neutral-muted py-6 text-center">No lineup recorded yet.</p>
       ) : (
       <div className="space-y-5">
       {/* Matrix */}
@@ -521,21 +579,21 @@ function LineupMatrix({ match, editMode, onRefetch }) {
         <table className="min-w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="sticky left-0 bg-white pl-5 sm:pl-0 pr-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 whitespace-nowrap min-w-[140px]">
+              <th className="sticky left-0 bg-neutral-card pl-5 sm:pl-0 pr-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[140px]">
                 Player
               </th>
               {segments.map(seg => (
                 <Fragment key={seg.index}>
-                  <th className="px-1 py-2 text-xs font-medium text-slate-400 text-center whitespace-nowrap min-w-[56px]">
+                  <th className="px-1 py-2 text-xs font-medium text-neutral-muted text-center whitespace-nowrap min-w-[56px]">
                     {seg.label}
                   </th>
                   {seg.index === 3 && (
-                    <th className="w-6 px-0 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center border-l border-slate-200">
+                    <th className="w-6 px-0 py-2 text-[9px] font-bold text-neutral-muted uppercase tracking-widest text-center border-l border-neutral-border">
                       HT
                     </th>
                   )}
                   {seg.index === 7 && (
-                    <th className="w-6 px-0 py-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center border-l border-slate-200">
+                    <th className="w-6 px-0 py-2 text-[9px] font-bold text-neutral-muted uppercase tracking-widest text-center border-l border-neutral-border">
                       FT
                     </th>
                   )}
@@ -547,24 +605,24 @@ function LineupMatrix({ match, editMode, onRefetch }) {
             {matrixPlayers.map(player => {
               const totalMins = getPlayerTotalMins(player.id)
               return (
-                <tr key={player.id} className="hover:bg-slate-50">
+                <tr key={player.id} className="hover:bg-neutral-secondary/50">
                   <td className="sticky left-0 bg-inherit pl-5 sm:pl-0 pr-3 py-2">
                     <div className="flex items-center justify-between gap-2">
                       <Link
                         to={`/players/${player.id}`}
-                        className="font-semibold text-slate-800 hover:text-emerald-600 transition-colors whitespace-nowrap text-sm"
+                        className="font-semibold text-neutral-fg hover:text-neutral-accent transition-colors whitespace-nowrap text-sm"
                       >
                         {player.name}
                       </Link>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {totalMins > 0 && (
-                          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">{Math.round(totalMins)}'</span>
+                          <span className="text-xs text-neutral-muted font-medium whitespace-nowrap">{Math.round(totalMins)}'</span>
                         )}
                         {editMode && (
                           <button
                             onClick={() => handleRemovePlayer(player.id)}
                             disabled={busy}
-                            className="text-slate-300 hover:text-rose-500 transition-colors disabled:opacity-40 leading-none"
+                            className="text-neutral-muted/70 hover:text-hornets-tertiary transition-colors disabled:opacity-40 leading-none"
                             title="Remove player"
                           >✕</button>
                         )}
@@ -591,8 +649,8 @@ function LineupMatrix({ match, editMode, onRefetch }) {
                             <span className="text-slate-200 text-xs">—</span>
                           )}
                         </td>
-                        {seg.index === 3 && <td className="w-6 px-0 border-l border-slate-200 bg-slate-50" />}
-                        {seg.index === 7 && <td className="w-6 px-0 border-l border-slate-200 bg-slate-50" />}
+                        {seg.index === 3 && <td className="w-6 px-0 border-l border-neutral-border bg-neutral-secondary/50" />}
+                        {seg.index === 7 && <td className="w-6 px-0 border-l border-neutral-border bg-neutral-secondary/50" />}
                       </Fragment>
                     )
                   })}
@@ -605,11 +663,11 @@ function LineupMatrix({ match, editMode, onRefetch }) {
 
       {/* Edit mode: custom-range appearance form */}
       {editMode && (
-        <form onSubmit={handleAddAppearance} className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Add custom time slot</p>
+        <form onSubmit={handleAddAppearance} className="bg-neutral-accent/10 border border-neutral-accent/30 rounded-xl p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-accent">Add custom time slot</p>
           <div className="flex flex-wrap gap-2 items-end">
             <select
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-neutral-accent"
               value={addForm.player_id}
               onChange={e => setAddForm(f => ({ ...f, player_id: e.target.value }))}
               required
@@ -618,7 +676,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
               {allPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-neutral-accent"
               value={addForm.position}
               onChange={e => setAddForm(f => ({ ...f, position: e.target.value }))}
             >
@@ -626,25 +684,25 @@ function LineupMatrix({ match, editMode, onRefetch }) {
             </select>
             <input
               type="number" min={0} max={matchLen} placeholder="Start"
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs w-16 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-xs w-16 focus:outline-none focus:ring-1 focus:ring-neutral-accent"
               value={addForm.time_start}
               onChange={e => setAddForm(f => ({ ...f, time_start: e.target.value }))}
             />
-            <span className="text-slate-400 text-xs">to</span>
+            <span className="text-neutral-muted text-xs">to</span>
             <input
               type="number" min={1} max={matchLen} placeholder="End"
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs w-16 focus:outline-none focus:ring-1 focus:ring-emerald-400"
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-xs w-16 focus:outline-none focus:ring-1 focus:ring-neutral-accent"
               value={addForm.time_end}
               onChange={e => setAddForm(f => ({ ...f, time_end: e.target.value }))}
             />
             <button
               type="submit" disabled={busy}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
+              className="bg-neutral-accent/100 hover:bg-neutral-accent text-white text-xs font-semibold rounded-lg px-3 py-1.5 transition-colors disabled:opacity-50"
             >
               {busy ? '…' : '+ Add'}
             </button>
           </div>
-          {addErr && <p className="text-xs text-rose-600">{addErr}</p>}
+          {addErr && <p className="text-xs text-hornets-tertiary">{addErr}</p>}
         </form>
       )}
       </div>
@@ -663,9 +721,15 @@ function GoalsSection({ match, editMode, onRefetch }) {
     scorer_player_id: '',
     assist_player_id: '',
     for_histon: true,
-    goal_half: 'H1',
-    goal_quarter: 1,
+    timing: 'H1Q1', // Combined field: H1Q1, H1Q2, H2Q3, H2Q4
   })
+  
+  const GOAL_TIMINGS = [
+    { label: 'H1, Q1', value: 'H1Q1', half: 'H1', quarter: 1 },
+    { label: 'H1, Q2', value: 'H1Q2', half: 'H1', quarter: 2 },
+    { label: 'H2, Q3', value: 'H2Q3', half: 'H2', quarter: 3 },
+    { label: 'H2, Q4', value: 'H2Q4', half: 'H2', quarter: 4 },
+  ]
   const [saving, setSaving] = useState(false)
   const [err, setErr] = useState(null)
 
@@ -676,28 +740,36 @@ function GoalsSection({ match, editMode, onRefetch }) {
 
   const handleAdd = async (e) => {
     e.preventDefault()
-    if (!form.scorer_player_id) return
+    if (form.for_histon && !form.scorer_player_id) return
     setSaving(true); setErr(null)
     try {
+      const timing = GOAL_TIMINGS.find(t => t.value === form.timing)
       const result = await insertGoal({
-        ...form,
+        scorer_player_id: form.scorer_player_id ? Number(form.scorer_player_id) : null,
+        assist_player_id: form.assist_player_id ? Number(form.assist_player_id) : null,
+        for_histon: form.for_histon,
+        half: timing.half,
+        quarter: timing.quarter,
         match_id: match.id,
-        assist_player_id: form.assist_player_id || null,
-        goal_quarter: Number(form.goal_quarter),
       })
       
       // Optimistically add to state
-      const scorer = allPlayers?.find(p => p.id === Number(form.scorer_player_id))
+      const scorer = form.scorer_player_id ? allPlayers?.find(p => p.id === Number(form.scorer_player_id)) : null
       const assist = form.assist_player_id ? allPlayers?.find(p => p.id === Number(form.assist_player_id)) : null
       setGoals([...goals, {
         id: result?.id || Math.max(...goals.map(a => a.id || 0), 0) + 1,
-        ...form,
-        goal_quarter: Number(form.goal_quarter),
-        players: { name: scorer?.name || 'Unknown' },
-        players_assist: assist ? { name: assist.name } : null,
+        scorer_player_id: form.scorer_player_id ? Number(form.scorer_player_id) : null,
+        assist_player_id: form.assist_player_id ? Number(form.assist_player_id) : null,
+        for_histon: form.for_histon,
+        half: timing.half,
+        quarter: timing.quarter,
+        match_id: match.id,
+        players: form.for_histon ? { name: scorer?.name || 'Unknown' } : null,
+        players_assist: form.for_histon && assist ? { name: assist.name } : null,
       }])
       
-      setForm({ scorer_player_id: '', assist_player_id: '', for_histon: true, goal_half: 'H1', goal_quarter: 1 })
+      // Remember for_histon and timing for next entry, only clear player selections
+      setForm(f => ({ ...f, scorer_player_id: '', assist_player_id: '' }))
     } catch (e) { 
       setErr(e.message)
       // Refetch on error to sync state
@@ -711,10 +783,10 @@ function GoalsSection({ match, editMode, onRefetch }) {
   const oppGoals    = goals.filter(g => !g.for_histon)
 
   const GoalTiming = ({ g }) => {
-    if (!g.goal_half) return null
+    if (!g.half) return null
     return (
-      <span className="text-xs font-medium text-slate-400 ml-1">
-        {g.goal_half}, Q{g.goal_quarter}
+      <span className="text-xs font-medium text-neutral-muted ml-1">
+        {g.half}, Q{g.quarter}
       </span>
     )
   }
@@ -723,24 +795,24 @@ function GoalsSection({ match, editMode, onRefetch }) {
     <div className="space-y-4">
       {/* Half Time marker */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-slate-100" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Kick Off</span>
-        <div className="flex-1 h-px bg-slate-100" />
+        <div className="flex-1 h-px bg-neutral-secondary" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-muted">Kick Off</span>
+        <div className="flex-1 h-px bg-neutral-secondary" />
       </div>
 
       {histonGoals.length === 0 && oppGoals.length === 0 && !editMode && (
-        <p className="text-sm text-slate-400 py-2 text-center">No goals recorded.</p>
+        <p className="text-sm text-neutral-muted py-2 text-center">No goals recorded.</p>
       )}
 
       {histonGoals.length > 0 && (
         <div className="space-y-1.5">
           {histonGoals.map(g => (
-            <div key={g.id} className="flex items-center gap-2.5 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2">
+            <div key={g.id} className="flex items-center gap-2.5 bg-neutral-accent/10 border border-neutral-accent/30 rounded-lg px-3 py-2">
               <span className="text-base">⚽</span>
               <div className="flex-1 min-w-0">
-                <span className="font-semibold text-slate-800 text-sm">{g.players?.name ?? 'Unknown'}</span>
+                <span className="font-semibold text-neutral-fg text-sm">{g.players?.name ?? 'Unknown'}</span>
                 {g.players_assist?.name && (
-                  <span className="text-slate-400 text-xs ml-2">assist: {g.players_assist.name}</span>
+                  <span className="text-neutral-muted text-xs ml-2">assist: {g.players_assist.name}</span>
                 )}
                 <GoalTiming g={g} />
               </div>
@@ -760,7 +832,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
                     setSaving(false)
                   }
                 }}
-                  className="text-xs text-rose-500 hover:text-rose-700 font-medium shrink-0 disabled:opacity-50" disabled={saving}>✕</button>
+                  className="text-xs text-hornets-tertiary hover:text-hornets-tertiary font-medium shrink-0 disabled:opacity-50" disabled={saving}>✕</button>
               )}
             </div>
           ))}
@@ -769,18 +841,18 @@ function GoalsSection({ match, editMode, onRefetch }) {
 
       {/* Half Time divider */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-slate-100" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Half Time</span>
-        <div className="flex-1 h-px bg-slate-100" />
+        <div className="flex-1 h-px bg-neutral-secondary" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-muted">Half Time</span>
+        <div className="flex-1 h-px bg-neutral-secondary" />
       </div>
 
       {oppGoals.length > 0 && (
         <div className="space-y-1.5">
           {oppGoals.map(g => (
-            <div key={g.id} className="flex items-center gap-2.5 bg-rose-50 border border-rose-100 rounded-lg px-3 py-2">
+            <div key={g.id} className="flex items-center gap-2.5 bg-hornets-tertiary/10 border border-hornets-tertiary/30 rounded-lg px-3 py-2">
               <span className="text-base">⚽</span>
               <div className="flex-1 min-w-0">
-                <span className="font-medium text-slate-600 text-sm">Opposition goal</span>
+                <span className="font-medium text-neutral-fg/70 text-sm">Opposition goal</span>
                 <GoalTiming g={g} />
               </div>
               {editMode && (
@@ -799,7 +871,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
                     setSaving(false)
                   }
                 }}
-                  className="text-xs text-rose-500 hover:text-rose-700 font-medium shrink-0 disabled:opacity-50" disabled={saving}>✕</button>
+                  className="text-xs text-hornets-tertiary hover:text-hornets-tertiary font-medium shrink-0 disabled:opacity-50" disabled={saving}>✕</button>
               )}
             </div>
           ))}
@@ -808,68 +880,76 @@ function GoalsSection({ match, editMode, onRefetch }) {
 
       {/* Full Time divider */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-slate-100" />
-        <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Full Time</span>
-        <div className="flex-1 h-px bg-slate-100" />
+        <div className="flex-1 h-px bg-neutral-secondary" />
+        <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-muted">Full Time</span>
+        <div className="flex-1 h-px bg-neutral-secondary" />
       </div>
 
       {/* Add goal form (edit mode) */}
       {editMode && (
-        <form onSubmit={handleAdd} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Log Goal</p>
+        <form onSubmit={handleAdd} className="bg-neutral-secondary/50 border border-neutral-border rounded-xl p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-neutral-muted/80">Log Goal</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {/* For / Against radio buttons */}
+            <div className="col-span-2 sm:col-span-3 flex gap-4">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="goal_type"
+                  value="for"
+                  checked={form.for_histon}
+                  onChange={() => setForm(f => ({ ...f, for_histon: true }))}
+                  className="accent-neutral-accent"
+                />
+                <span className="text-neutral-fg">For</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="goal_type"
+                  value="against"
+                  checked={!form.for_histon}
+                  onChange={() => setForm(f => ({ ...f, for_histon: false, assist_player_id: '' }))}
+                  className="accent-neutral-accent"
+                />
+                <span className="text-neutral-fg">Against</span>
+              </label>
+            </div>
+            
+            {/* Scorer (required for "For", optional for "Against") */}
             <select
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
               value={form.scorer_player_id}
               onChange={e => setForm(f => ({ ...f, scorer_player_id: e.target.value }))}
-              required
+              required={form.for_histon}
             >
-              <option value="">Scorer…</option>
+              <option value="">{form.for_histon ? 'Scorer…' : 'Scorer (optional)…'}</option>
               {allPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select
-              className="border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
               value={form.assist_player_id}
               onChange={e => setForm(f => ({ ...f, assist_player_id: e.target.value }))}
+              disabled={!form.for_histon}
             >
               <option value="">Assist (optional)…</option>
               {allPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <div className="flex gap-2">
-              <select
-                className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                value={form.goal_half}
-                onChange={e => setForm(f => ({ ...f, goal_half: e.target.value }))}
-              >
-                {HALVES.map(h => <option key={h}>{h}</option>)}
-              </select>
-              <select
-                className="flex-1 border border-slate-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                value={form.goal_quarter}
-                onChange={e => setForm(f => ({ ...f, goal_quarter: e.target.value }))}
-              >
-                {QUARTERS.map(q => <option key={q} value={q}>Q{q}</option>)}
-              </select>
-            </div>
-            <div className="flex items-center gap-3 col-span-2 sm:col-span-3">
-              <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={form.for_histon}
-                  onChange={e => setForm(f => ({ ...f, for_histon: e.target.checked }))}
-                  className="accent-emerald-500"
-                />
-                <span className="text-slate-600">For Histon</span>
-              </label>
-              <button
-                type="submit" disabled={saving}
-                className="ml-auto bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-lg px-4 py-1.5 transition-colors disabled:opacity-50"
-              >
-                {saving ? '…' : '+ Log Goal'}
-              </button>
-            </div>
+            <select
+              className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent col-span-2 sm:col-span-3"
+              value={form.timing}
+              onChange={e => setForm(f => ({ ...f, timing: e.target.value }))}
+            >
+              {GOAL_TIMINGS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            </select>
+            <button
+              type="submit" disabled={saving}
+              className="col-span-2 sm:col-span-3 bg-neutral-accent/100 hover:bg-neutral-accent text-white text-sm font-semibold rounded-lg px-4 py-1.5 transition-colors disabled:opacity-50"
+            >
+              {saving ? '…' : '+ Log Goal'}
+            </button>
           </div>
-          {err && <p className="text-xs text-rose-600">{err}</p>}
+          {err && <p className="text-xs text-hornets-tertiary">{err}</p>}
         </form>
       )}
     </div>
@@ -922,7 +1002,7 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
       {!editMode && awards.map(a => (
         <div key={a.id} className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
           <span className="text-amber-400 text-lg">★</span>
-          <span className="font-semibold text-slate-800 text-sm">{a.players?.name}</span>
+          <span className="font-semibold text-neutral-fg text-sm">{a.players?.name}</span>
         </div>
       ))}
       {editMode && playersInMatch.map(player => {
@@ -931,16 +1011,16 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
           <button
             key={player.id} onClick={() => toggle(player)} disabled={saving}
             className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium border transition-colors ${
-              isAward ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+              isAward ? 'bg-amber-50 border-amber-300 text-amber-700' : 'bg-neutral-card border-neutral-border text-neutral-fg/70 hover:bg-neutral-secondary/50'
             }`}
           >
-            <span className={isAward ? 'text-amber-400' : 'text-slate-300'}>★</span>
+            <span className={isAward ? 'text-amber-400' : 'text-neutral-muted/70'}>★</span>
             {player.name}
           </button>
         )
       })}
       {editMode && playersInMatch.length === 0 && (
-        <p className="text-sm text-slate-400 text-center py-2">Add players to the lineup first.</p>
+        <p className="text-sm text-neutral-muted text-center py-2">Add players to the lineup first.</p>
       )}
     </div>
   )
@@ -968,7 +1048,7 @@ export default function MatchDetail() {
   if (loading) return <div className="max-w-5xl mx-auto px-4 py-8"><Spinner message="Loading match…" /></div>
   if (error) return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 text-sm">{error}</div>
+      <div className="bg-hornets-tertiary/10 border border-rose-200 rounded-xl p-4 text-hornets-tertiary text-sm">{error}</div>
     </div>
   )
   if (!match) return null
@@ -983,7 +1063,7 @@ export default function MatchDetail() {
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+          className="flex items-center gap-1.5 text-sm font-medium text-neutral-muted/80 hover:text-neutral-fg transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -995,7 +1075,7 @@ export default function MatchDetail() {
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
             editMode
               ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              : 'bg-neutral-secondary text-neutral-fg/70 hover:bg-slate-200'
           }`}
         >
           {editMode ? (
@@ -1017,27 +1097,27 @@ export default function MatchDetail() {
                   value={match.match_type}
                   disabled={savingType}
                   onChange={e => handleTypeChange(e.target.value)}
-                  className="text-xs font-semibold rounded-full px-2.5 py-1 bg-white/10 text-white border border-white/20 focus:outline-none focus:ring-1 focus:ring-emerald-400 disabled:opacity-50"
+                  className="text-xs font-semibold rounded-full px-2.5 py-1 bg-neutral-card/10 text-white border border-white/20 focus:outline-none focus:ring-1 focus:ring-neutral-accent disabled:opacity-50"
                 >
                   {MATCH_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                 </select>
               ) : (
-                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-white/10 text-white/80">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-neutral-card/10 text-white/80">
                   {match.match_type}
                 </span>
               )}
-              <span className="text-xs text-slate-400">{match.location === 'H' ? 'Home' : 'Away'}</span>
-              <span className="text-xs text-slate-400">·</span>
-              <span className="text-xs text-slate-400">{formatDate(match.match_date)}</span>
+              <span className="text-xs text-neutral-muted">{match.location === 'H' ? 'Home' : 'Away'}</span>
+              <span className="text-xs text-neutral-muted">·</span>
+              <span className="text-xs text-neutral-muted">{formatDate(match.match_date)}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">vs {match.opposition}</h1>
-            <p className="text-slate-400 text-sm mt-1">{match.seasons?.name} · {match.match_length_mins} mins</p>
+            <p className="text-neutral-muted text-sm mt-1">{match.seasons?.name} · {match.match_length_mins} mins</p>
           </div>
 
           {hasResult && (
             <div className="text-right shrink-0">
               <div className="text-4xl sm:text-5xl font-black text-white leading-none">
-                {match.histon_score}<span className="text-slate-500 mx-1">–</span>{match.opposition_score}
+                {match.histon_score}<span className="text-neutral-muted/80 mx-1">–</span>{match.opposition_score}
               </div>
               <span className={`inline-block mt-2 text-sm font-bold px-3 py-1 rounded-full ${resultColor}`}>
                 {result === 'W' ? 'Win' : result === 'L' ? 'Loss' : 'Draw'}
@@ -1058,21 +1138,21 @@ export default function MatchDetail() {
       )}
 
       {/* ── Lineup ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-bold text-slate-800 mb-4">Lineup</h2>
+      <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-5 sm:p-6">
+        <h2 className="text-base font-bold text-neutral-fg mb-4">Lineup</h2>
         <LineupMatrix match={match} editMode={editMode} onRefetch={refetch} />
       </div>
 
       {/* ── Goals & Events ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-bold text-slate-800 mb-4">Goals &amp; Events</h2>
+      <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-5 sm:p-6">
+        <h2 className="text-base font-bold text-neutral-fg mb-4">Goals &amp; Events</h2>
         <GoalsSection match={match} editMode={editMode} onRefetch={refetch} />
       </div>
 
       {/* ── Star Players ── */}
       {((match.star_player_awards || []).length > 0 || editMode) && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
-          <h2 className="text-base font-bold text-slate-800 mb-4">
+        <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-5 sm:p-6">
+          <h2 className="text-base font-bold text-neutral-fg mb-4">
             <span className="text-amber-400 mr-1.5">★</span>Star Players
           </h2>
           <StarPlayersSection match={match} editMode={editMode} onRefetch={refetch} />
@@ -1080,10 +1160,10 @@ export default function MatchDetail() {
       )}
 
       {/* ── DEBUG: raw player_appearances ── */}
-      <div className="rounded-2xl border border-slate-200 overflow-hidden">
+      <div className="rounded-2xl border border-neutral-border overflow-hidden">
         <button
           onClick={() => setShowDebug(v => !v)}
-          className="w-full flex items-center justify-between px-5 py-3 bg-slate-100 hover:bg-slate-200 transition-colors text-xs font-semibold text-slate-500 uppercase tracking-wide"
+          className="w-full flex items-center justify-between px-5 py-3 bg-neutral-secondary hover:bg-slate-200 transition-colors text-xs font-semibold text-neutral-muted/80 uppercase tracking-wide"
         >
           <span>Debug — player_appearances</span>
           <span>{showDebug ? '▲ Hide' : '▼ Show'}</span>
@@ -1093,10 +1173,10 @@ export default function MatchDetail() {
           const dbgSegs = Array.from({ length: 8 }, (_, i) => ({ start: i * dbgLen / 8, end: (i + 1) * dbgLen / 8 }))
           return (
             <div className="bg-slate-900 text-emerald-300 p-5 font-mono text-xs overflow-x-auto">
-              <p className="text-slate-400 mb-3">match_id={match.id} · match_length={dbgLen}</p>
+              <p className="text-neutral-muted mb-3">match_id={match.id} · match_length={dbgLen}</p>
               <table className="w-full border-collapse">
                 <thead>
-                  <tr className="text-slate-400 border-b border-slate-700">
+                  <tr className="text-neutral-muted border-b border-slate-700">
                     {['id','player_id','name','time_start','time_end','position','segments hit'].map(h => (
                       <th key={h} className="text-left pr-4 pb-1">{h}</th>
                     ))}
@@ -1110,13 +1190,13 @@ export default function MatchDetail() {
                       const hits = dbgSegs.filter(s => a.time_start < s.end && a.time_end > s.start).map((_,i) => i)
                       return (
                         <tr key={a.id} className="border-b border-slate-800">
-                          <td className="pr-4 py-0.5 text-slate-400">{a.id}</td>
+                          <td className="pr-4 py-0.5 text-neutral-muted">{a.id}</td>
                           <td className="pr-4 py-0.5">{a.player_id}</td>
-                          <td className="pr-4 py-0.5 text-slate-300">{a.players?.name ?? '?'}</td>
+                          <td className="pr-4 py-0.5 text-neutral-muted/70">{a.players?.name ?? '?'}</td>
                           <td className="pr-4 py-0.5">{a.time_start}</td>
                           <td className="pr-4 py-0.5">{a.time_end}</td>
                           <td className="pr-4 py-0.5 text-emerald-400 font-bold">{a.position}</td>
-                          <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-rose-500' : 'text-emerald-400'}`}>
+                          <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-hornets-tertiary' : 'text-emerald-400'}`}>
                             {hits.length === 0 ? 'NONE' : `[${hits.join(',')}]`}
                           </td>
                         </tr>

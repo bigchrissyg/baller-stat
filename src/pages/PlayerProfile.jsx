@@ -17,7 +17,7 @@ export default function PlayerProfile() {
   if (loading) return <div className="max-w-4xl mx-auto px-4 py-8"><Spinner message="Loading player…" /></div>
   if (error) return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 text-rose-700 text-sm">{error}</div>
+      <div className="bg-hornets-tertiary/10 border border-rose-200 rounded-xl p-4 text-hornets-tertiary text-sm">{error}</div>
     </div>
   )
   if (!player || !stats) return null
@@ -39,7 +39,7 @@ export default function PlayerProfile() {
       {/* ── Back ── */}
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors"
+        className="flex items-center gap-1.5 text-sm font-medium text-neutral-muted/80 hover:text-neutral-fg transition-colors"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -49,7 +49,7 @@ export default function PlayerProfile() {
 
       {/* ── Player header ── */}
       <div className="bg-slate-900 text-white rounded-2xl p-6 flex items-center gap-5">
-        <div className="w-16 h-16 rounded-2xl bg-emerald-500 flex items-center justify-center text-2xl font-bold text-white shrink-0">
+        <div className="w-16 h-16 rounded-2xl bg-neutral-accent/100 flex items-center justify-center text-2xl font-bold text-white shrink-0">
           {getInitials(player.name)}
         </div>
         <div>
@@ -76,24 +76,24 @@ export default function PlayerProfile() {
       </div>
 
       {/* ── Statistics with Charts ── */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-bold text-slate-800 mb-6">Statistics & Analysis</h2>
+      <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-5 sm:p-6">
+        <h2 className="text-base font-bold text-neutral-fg mb-6">Statistics & Analysis</h2>
         <PlayerStatsCharts agg={agg} posBreakdown={posBreakdown} />
       </div>
 
       {/* ── Match history ── */}
       {appearances.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 sm:p-6">
-          <h2 className="text-base font-bold text-slate-800 mb-4">Match History</h2>
+        <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-5 sm:p-6">
+          <h2 className="text-base font-bold text-neutral-fg mb-4">Match History</h2>
           <div className="overflow-x-auto -mx-5 sm:mx-0">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left pl-5 sm:pl-0 pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Date</th>
-                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Match</th>
-                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Pos</th>
-                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Time</th>
-                  <th className="text-right pr-5 sm:pr-0 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">Result</th>
+                <tr className="border-b border-neutral-border">
+                  <th className="text-left pl-5 sm:pl-0 pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-muted">Date</th>
+                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-muted">Match</th>
+                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-muted">Pos</th>
+                  <th className="text-left pr-4 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-muted">Time</th>
+                  <th className="text-right pr-5 sm:pr-0 py-2 text-xs font-semibold uppercase tracking-wide text-neutral-muted">Result</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -103,14 +103,14 @@ export default function PlayerProfile() {
                   )
                   const mins = app.time_end - app.time_start
                   return (
-                    <tr key={app.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="pl-5 sm:pl-0 pr-4 py-3 text-slate-500 whitespace-nowrap">
+                    <tr key={app.id} className="hover:bg-neutral-secondary/50 transition-colors">
+                      <td className="pl-5 sm:pl-0 pr-4 py-3 text-neutral-muted/80 whitespace-nowrap">
                         {formatDate(app.matches?.match_date)}
                       </td>
-                      <td className="pr-4 py-3 font-medium text-slate-800 whitespace-nowrap">
+                      <td className="pr-4 py-3 font-medium text-neutral-fg whitespace-nowrap">
                         <Link
                           to={`/matches/${app.match_id}`}
-                          className="hover:text-emerald-600 transition-colors"
+                          className="hover:text-neutral-accent transition-colors"
                         >
                           vs {app.matches?.opposition}
                         </Link>
@@ -120,8 +120,8 @@ export default function PlayerProfile() {
                           {app.position}
                         </span>
                       </td>
-                      <td className="pr-4 py-3 text-slate-500 whitespace-nowrap">
-                        {app.time_start}'–{app.time_end}' <span className="text-slate-300">({mins}')</span>
+                      <td className="pr-4 py-3 text-neutral-muted/80 whitespace-nowrap">
+                        {app.time_start}'–{app.time_end}' <span className="text-neutral-muted/70">({mins}')</span>
                       </td>
                       <td className="pr-5 sm:pr-0 py-3 text-right">
                         {app.matches?.histon_score !== null ? (
@@ -129,7 +129,7 @@ export default function PlayerProfile() {
                             {app.matches?.histon_score}–{app.matches?.opposition_score} {result}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-300">—</span>
+                          <span className="text-xs text-neutral-muted/70">—</span>
                         )}
                       </td>
                     </tr>
