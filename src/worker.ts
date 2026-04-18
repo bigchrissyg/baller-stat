@@ -12,8 +12,8 @@ export default {
     // This enables client-side routing for React Router
     if (!pathname.includes('.') || pathname === '/' || pathname.startsWith('/matches/') || pathname.startsWith('/players/')) {
       try {
-        // In service worker format, assets are available via global ASSETS object
-        const indexResponse = await ASSETS.fetch(new Request(`${url.origin}/index.html`, request))
+        // Fetch index.html from the static site
+        const indexResponse = await fetch(`${url.origin}/index.html`)
 
         if (indexResponse.ok) {
           let html = await indexResponse.text()
@@ -41,13 +41,8 @@ export default {
       }
     }
 
-    // For all other requests (CSS, JS, images, etc.), let Cloudflare serve them directly
-    try {
-      return await ASSETS.fetch(request)
-    } catch (e) {
-      console.error('Error serving asset:', e)
-      return new Response('Not found', { status: 404 })
-    }
+    // For all other requests, let Cloudflare serve the static files automatically
+    return fetch(request)
   },
 }
 
