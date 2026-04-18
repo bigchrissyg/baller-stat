@@ -706,10 +706,45 @@ export default function Home() {
             accent={gf - ga >= 0 ? 'secondary' : 'tertiary'}
           />
         </div>
+      </section>
 
-        {/* ── Season Charts ── */}
-        {played.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+      {/* ── Fixtures ── */}
+      <section>
+        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+          <div className="flex items-center gap-1 bg-neutral-card border border-neutral-border rounded-xl p-1 shadow-sm">
+            {MATCH_TYPES.map(t => (
+              <button key={t} onClick={() => setFilter(t)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filter === t ? 'bg-neutral-accent text-neutral-bg shadow-sm' : 'text-neutral-muted hover:text-neutral-fg'
+                }`}
+              >{t}</button>
+            ))}
+          </div>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-semibold rounded-xl transition-colors shadow-sm"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Fixture
+          </button>
+        </div>
+        {filtered.length === 0 ? (
+          <div className="text-center py-16 text-neutral-muted text-sm">
+            No {filter !== 'All' ? filter.toLowerCase() : ''} fixtures found
+          </div>
+        ) : (
+          <div className="space-y-2.5">
+            {filtered.map(m => <FixtureRow key={m.id} match={m} />)}
+          </div>
+        )}
+      </section>
+
+      {/* ── Season Charts ── */}
+      {played.length > 0 && (
+        <section>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Results Distribution */}
             <div className="bg-gradient-to-br from-result-win/5 to-result-loss/5 rounded-2xl border border-neutral-border shadow-sm p-6">
               <h3 className="text-base font-bold text-neutral-fg mb-6">Results Distribution</h3>
@@ -733,8 +768,8 @@ export default function Home() {
                     <Cell fill="#6b7280" />
                     <Cell fill="#ef4444" />
                   </Pie>
-                  <Tooltip 
-                    contentStyle={{ 
+                  <Tooltip
+                    contentStyle={{
                       backgroundColor: '#111827',
                       border: '1px solid #cbd5e1',
                       borderRadius: '8px',
@@ -758,8 +793,8 @@ export default function Home() {
                   <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
                   <XAxis dataKey="category" stroke="#64748b" />
                   <YAxis stroke="#64748b" />
-                  <Tooltip 
-                    contentStyle={{ 
+                  <Tooltip
+                    contentStyle={{
                       backgroundColor: '#111827',
                       border: '1px solid #cbd5e1',
                       borderRadius: '8px',
@@ -852,41 +887,8 @@ export default function Home() {
               </div>
             )}
           </div>
-        )}
-      </section>
-
-      {/* ── Fixtures ── */}
-      <section>
-        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <div className="flex items-center gap-1 bg-neutral-card border border-neutral-border rounded-xl p-1 shadow-sm">
-            {MATCH_TYPES.map(t => (
-              <button key={t} onClick={() => setFilter(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filter === t ? 'bg-neutral-accent text-neutral-bg shadow-sm' : 'text-neutral-muted hover:text-neutral-fg'
-                }`}
-              >{t}</button>
-            ))}
-          </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-semibold rounded-xl transition-colors shadow-sm"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Fixture
-          </button>
-        </div>
-        {filtered.length === 0 ? (
-          <div className="text-center py-16 text-neutral-muted text-sm">
-            No {filter !== 'All' ? filter.toLowerCase() : ''} fixtures found
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            {filtered.map(m => <FixtureRow key={m.id} match={m} />)}
-          </div>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* ── Player Stats Table ── */}
       <section>
