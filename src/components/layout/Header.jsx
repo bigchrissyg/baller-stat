@@ -1,6 +1,9 @@
 import { Link, NavLink } from 'react-router-dom'
+import { useAuth } from '../../contexts/AuthContext'
 
 export default function Header() {
+  const { user, signOut } = useAuth()
+
   return (
     <header className="text-white sticky top-0 z-50 shadow-lg border-b border-neutral-secondary" style={{ backgroundColor: '#1e3a8a' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -14,33 +17,45 @@ export default function Header() {
           </div>
         </Link>
 
-        <nav className="flex items-center gap-1">
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-neutral-accent text-white'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`
-            }
-          >
-            Dashboard
-          </NavLink>
-          <NavLink
-            to="/players"
-            className={({ isActive }) =>
-              `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-neutral-accent text-white'
-                  : 'text-white/70 hover:text-white hover:bg-white/10'
-              }`
-            }
-          >
-            Players
-          </NavLink>
-        </nav>
+        <div className="flex items-center gap-4">
+          <nav className="flex items-center gap-1">
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-neutral-accent text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`
+              }
+            >
+              Dashboard
+            </NavLink>
+            <NavLink
+              to="/players"
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive
+                    ? 'bg-neutral-accent text-white'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                }`
+              }
+            >
+              Players
+            </NavLink>
+          </nav>
+
+          <div className="flex items-center gap-2">
+            <span className="text-white/70 text-sm">{user?.email}</span>
+            <button
+              onClick={signOut}
+              className="px-3 py-2 rounded-lg text-sm font-medium text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
       </div>
     </header>
   )
