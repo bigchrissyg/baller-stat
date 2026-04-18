@@ -15,37 +15,56 @@ export const getMatchResult = (histonScore, oppositionScore) => {
     return { result: 'TBD', color: 'bg-slate-100 text-slate-600' }
   }
   if (histonScore > oppositionScore) {
-    return { result: 'W', color: 'bg-emerald-100 text-emerald-700', textColor: 'text-emerald-700' }
+    return { result: 'W', color: 'bg-result-win text-white', textColor: 'text-result-win' }
   } else if (histonScore < oppositionScore) {
-    return { result: 'L', color: 'bg-rose-100 text-rose-700', textColor: 'text-rose-700' }
+    return { result: 'L', color: 'bg-result-loss text-white', textColor: 'text-result-loss' }
   }
-  return { result: 'D', color: 'bg-amber-100 text-amber-700', textColor: 'text-amber-700' }
+  return { result: 'D', color: 'bg-result-draw text-white', textColor: 'text-result-draw' }
 }
 
 // ─── Position colors ──────────────────────────────────────────────────────────
 // GK = purple  |  Defense = red  |  Midfield = yellow  |  Attack = green
 
+// ─── Position color scheme ──────────────────────────────────────────────────
+// GK = purple | DEF (ends in B) = red | MID (ends in M) = yellow | ATK (ends in F/T) = green
+
 export const getPositionColor = (position) => {
   const colorMap = {
-    // Goalkeeper – purple
     GK:  'bg-purple-600 text-white',
-    // Defenders – red
     CB:  'bg-red-600 text-white',
     LB:  'bg-red-600 text-white',
     RB:  'bg-red-600 text-white',
-    // Midfielders – yellow
     CM:  'bg-yellow-400 text-yellow-900',
     CDM: 'bg-yellow-400 text-yellow-900',
     CAM: 'bg-yellow-400 text-yellow-900',
     LM:  'bg-yellow-400 text-yellow-900',
     RM:  'bg-yellow-400 text-yellow-900',
-    // Attackers – green
     CF:  'bg-green-600 text-white',
     LF:  'bg-green-600 text-white',
     RF:  'bg-green-600 text-white',
     ST:  'bg-green-600 text-white',
   }
   return colorMap[position] || 'bg-slate-200 text-slate-700'
+}
+
+// ─── Get position styles with solid and ghost states ────────────────────────
+export const getPositionStyles = (position) => {
+  const styleMap = {
+    GK:  { solid: 'bg-purple-600 text-white',       ghost: 'bg-purple-100 text-purple-600 border border-dashed border-purple-400' },
+    CB:  { solid: 'bg-red-600 text-white',          ghost: 'bg-red-100 text-red-600 border border-dashed border-red-400' },
+    LB:  { solid: 'bg-red-600 text-white',          ghost: 'bg-red-100 text-red-600 border border-dashed border-red-400' },
+    RB:  { solid: 'bg-red-600 text-white',          ghost: 'bg-red-100 text-red-600 border border-dashed border-red-400' },
+    CM:  { solid: 'bg-yellow-400 text-yellow-900',  ghost: 'bg-yellow-100 text-yellow-600 border border-dashed border-yellow-400' },
+    CDM: { solid: 'bg-yellow-400 text-yellow-900',  ghost: 'bg-yellow-100 text-yellow-600 border border-dashed border-yellow-400' },
+    CAM: { solid: 'bg-yellow-400 text-yellow-900',  ghost: 'bg-yellow-100 text-yellow-600 border border-dashed border-yellow-400' },
+    LM:  { solid: 'bg-yellow-400 text-yellow-900',  ghost: 'bg-yellow-100 text-yellow-600 border border-dashed border-yellow-400' },
+    RM:  { solid: 'bg-yellow-400 text-yellow-900',  ghost: 'bg-yellow-100 text-yellow-600 border border-dashed border-yellow-400' },
+    CF:  { solid: 'bg-green-600 text-white',        ghost: 'bg-green-100 text-green-600 border border-dashed border-green-400' },
+    LF:  { solid: 'bg-green-600 text-white',        ghost: 'bg-green-100 text-green-600 border border-dashed border-green-400' },
+    RF:  { solid: 'bg-green-600 text-white',        ghost: 'bg-green-100 text-green-600 border border-dashed border-green-400' },
+    ST:  { solid: 'bg-green-600 text-white',        ghost: 'bg-green-100 text-green-600 border border-dashed border-green-400' },
+  }
+  return styleMap[position] || { solid: 'bg-slate-200 text-slate-700', ghost: 'bg-slate-100 text-slate-600 border border-dashed border-slate-400' }
 }
 
 // ─── Position suggestions based on typical formations ─────────────────────────

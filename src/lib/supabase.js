@@ -76,7 +76,7 @@ export const createMatch = async (data) => {
 export const fetchPlayers = async () => {
   const { data, error } = await supabase
     .from('players')
-    .select('*')
+    .select('*, player_seasons(season_id, seasons(id, name))')
     .order('name', { ascending: true })
   if (error) throw error
   return data
@@ -85,7 +85,7 @@ export const fetchPlayers = async () => {
 export const fetchPlayer = async (playerId) => {
   const { data, error } = await supabase
     .from('players')
-    .select('*')
+    .select('*, player_seasons(season_id, seasons(id, name))')
     .eq('id', playerId)
     .single()
   if (error) throw error
@@ -119,6 +119,59 @@ export const fetchPlayerStats = async (playerId) => {
   if (awardsError) throw awardsError
 
   return { appearances: data, goals: goalsData || [], assists: assistsData || [], awards: awardsData || [] }
+}
+
+// ─── Players (mutations) ────────────────────────────────────────────────────
+
+export const insertPlayer = async (name) => {
+  const { data, error } = await supabase
+    .from('players')
+    .insert({ name, active: true })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const updatePlayer = async (id, data) => {
+  const { data: result, error } = await supabase
+    .from('players')
+    .update(data)
+    .eq('id', id)
+    .select()
+    .single()
+  if (error) throw error
+  return result
+}
+
+// ─── Player Seasons (relationship) ──────────────────────────────────────────
+
+export const fetchPlayerSeasons = async (playerId) => {
+  const { data, error } = await supabase
+    .from('player_seasons')
+    .select('season_id, seasons(id, name)')
+    .eq('player_id', playerId)
+  if (error) throw error
+  return data || []
+}
+
+export const insertPlayerSeason = async (playerId, seasonId) => {
+  const { data, error } = await supabase
+    .from('player_seasons')
+    .insert({ player_id: playerId, season_id: seasonId })
+    .select()
+    .single()
+  if (error) throw error
+  return data
+}
+
+export const deletePlayerSeason = async (playerId, seasonId) => {
+  const { error } = await supabase
+    .from('player_seasons')
+    .delete()
+    .eq('player_id', playerId)
+    .eq('season_id', seasonId)
+  if (error) throw error
 }
 
 // ─── Seasons ─────────────────────────────────────────────────────────────────
@@ -208,7 +261,7 @@ export const fetchAllPlayersStats = async () => {
     ),
     supabase.from('goals').select('*'),
     supabase.from('star_player_awards').select('*, matches(match_date)'),
-    supabase.from('players').select('*').order('name', { ascending: true }),
+    supabase.from('players').select('*, player_seasons(season_id, seasons(id, name))').order('name', { ascending: true }),
   ])
 
   if (appsRes.error)     throw appsRes.error

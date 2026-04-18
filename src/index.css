@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@300;400;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -7,16 +6,16 @@
 
 @layer base {
   body {
-    font-family: system-ui, -apple-system, sans-serif;
-    background-color: #f5f4ed;
-    color: #141413;
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    background-color: #ffffff;
+    color: #111827;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
   
   h1, h2, h3, h4, h5, h6 {
-    font-family: Georgia, serif;
-    font-weight: bold;
+    font-family: Inter, sans-serif;
+    font-weight: 700;
   }
   
   h1 { font-size: 2.25rem; }
@@ -25,7 +24,7 @@
   h4 { font-size: 1.25rem; }
   
   a {
-    color: #c96442;
+    color: #06b6d4;
     transition: opacity 0.2s ease;
   }
   
@@ -39,7 +38,7 @@
     outline: 2px solid transparent;
     outline-offset: 2px;
     ring: 2px;
-    ring-color: #c96442;
+    ring-color: #06b6d4;
     ring-offset-width: 0;
   }
 }

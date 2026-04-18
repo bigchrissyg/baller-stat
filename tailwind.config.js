@@ -8,25 +8,30 @@ export default {
     extend: {
       colors: {
         hornets: {
-          'primary': '#6B5B4F',      // Warm taupe/brown
-          'secondary': '#A67C52',    // Warm clay/terracotta
-          'tertiary': '#D97757',     // Rust/burnt orange
-          'quaternary': '#C9896C',   // Warm rose
-          'quinary': '#E8C5A1',      // Warm sand/cream
+          'primary': '#61707D',      // Blue Slate
+          'secondary': '#E85D75',    // Bubblegum Pink
+          'tertiary': '#9D69A3',     // Vintage Lavender
+          'quaternary': '#40F99B',   // Spring Green
+          'quinary': '#F5FBEF',      // Ivory
         },
         neutral: {
-          'bg': '#f5f4ed',           // Warm cream background
-          'fg': '#141413',           // Dark charcoal text
-          'accent': '#c96442',       // Terracotta accent
-          'card': '#faf9f5',         // Off-white surfaces
-          'secondary': '#e8e6dc',    // Subtle backgrounds
-          'muted': '#87867f',        // Disabled/secondary text
-          'border': '#e8e6dc',       // Light borders
+          'bg': '#ffffff',           // White
+          'fg': '#111827',           // Dark Navy
+          'accent': '#06b6d4',       // Teal
+          'card': '#f8fafc',         // Off-white
+          'secondary': '#e2e8f0',    // Light gray
+          'muted': '#64748b',        // Medium gray
+          'border': '#cbd5e1',       // Light gray border
+        },
+        result: {
+          'win': '#10b981',          // Vivid Emerald Green
+          'loss': '#ef4444',         // Vivid Red
+          'draw': '#6b7280',         // Vivid Grey
         }
       },
       fontFamily: {
-        'serif': ['Georgia', 'serif'],
-        'sans': ['system-ui', '-apple-system', 'sans-serif'],
+        'serif': ['Inter', 'sans-serif'],
+        'sans': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
     },
   },

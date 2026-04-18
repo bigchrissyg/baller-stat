@@ -18,7 +18,7 @@ export default function PlayerStatsCharts({ agg, posBreakdown }) {
     { metric: 'Awards', value: agg.starPlayerAwards },
   ]
 
-  const colors = ['#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444', '#14b8a6', '#f97316', '#06b6d4']
+  const colors = ['#1e3a8a', '#06b6d4', '#0ea5e9', '#f97316', '#0284c7', '#14b8a6', '#06b6d4', '#1e40af']
 
   return (
     <div className="space-y-6">
@@ -27,18 +27,18 @@ export default function PlayerStatsCharts({ agg, posBreakdown }) {
         <h3 className="text-base font-bold text-neutral-fg mb-4">Performance Metrics</h3>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={performanceData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
             <XAxis dataKey="metric" stroke="#64748b" />
             <YAxis stroke="#64748b" />
             <Tooltip 
               contentStyle={{ 
-                backgroundColor: '#141413',
-                border: '1px solid #6b6b63',
+                backgroundColor: '#111827',
+                border: '1px solid #cbd5e1',
                 borderRadius: '8px',
-                color: '#faf9f5'
+                color: '#f8fafc'
               }}
             />
-            <Bar dataKey="value" fill="#4D755D" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="value" fill="#1e3a8a" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>

@@ -5,13 +5,14 @@ import { createMatch } from '../lib/supabase'
 import { formatDate, formatDateShort, getMatchResult, getMatchTypeColor, getPositionGroup } from '../lib/utils'
 import StatCard from '../components/ui/StatCard'
 import Spinner from '../components/ui/Spinner'
+import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, ReferenceLine } from 'recharts'
 
 const MATCH_TYPES = ['All', 'League', 'Cup', 'Friendly']
 
 const RESULT_PILL = {
-  W: 'bg-neutral-accent text-neutral-bg',
-  D: 'bg-neutral-muted/40 text-neutral-fg',
-  L: 'bg-hornets-tertiary text-neutral-bg',
+  W: 'bg-result-win text-white',
+  D: 'bg-result-draw text-white',
+  L: 'bg-result-loss text-white',
 }
 
 // ─── Add Fixture Modal ────────────────────────────────────────────────────────
@@ -126,7 +127,7 @@ function AddFixtureModal({ onClose, onCreated }) {
 function FixtureRow({ match }) {
   const navigate = useNavigate()
   const { result } = getMatchResult(match.histon_score, match.opposition_score)
-  const hasScore = match.histon_score !== null
+  const hasScore = match.histon_score !== null && match.opposition_score !== null
 
   return (
     <button
@@ -200,8 +201,8 @@ function computePlayerRow(player, appearances, goals, awards) {
   const assiPerGame  = matches > 0 ? assistCount / matches : 0
 
   // Clean quarters as GK / DEF — calculated per segment across all played matches
-  // Requires goals to have goal_half + goal_quarter; falls back to 0 if missing.
-  const hasGoalTiming = goals.some(g => g.goal_half != null && g.goal_quarter != null)
+  // Requires goals to have half + quarter; falls back to 0 if missing.
+  const hasGoalTiming = goals.some(g => g.half != null && g.quarter != null)
   let cleanAsGK = 0, cleanAsDEF = 0
 
   if (hasGoalTiming) {
@@ -223,7 +224,7 @@ function computePlayerRow(player, appearances, goals, awards) {
           : Math.min(Math.floor((ss - halfLen) / (halfLen / 4)) + 1, 4)
         const conceded = goals.some(g =>
           g.match_id === a.match_id && !g.for_histon &&
-          g.goal_half === segHalf && g.goal_quarter === segQ
+          g.half === segHalf && parseInt(g.quarter.replace('Q', '')) === segQ
         )
         if (!conceded) {
           if (grp === 'gk')  cleanAsGK++
@@ -289,16 +290,154 @@ const COLS = [
   { key: 'cleanDEFPerGame','label': 'CS D/G', title: 'Clean quarters as DEF per game',     fmt: v => v > 0 ? fmtDec(v) : '—', heat: true, timingNeeded: true },
 ]
 
-function PlayerStatsTable({ data }) {
-  const [sortKey, setSortKey] = useState('totalMins')
-  const [sortDir, setSortDir] = useState(-1) // -1 = desc, 1 = asc
+// ─── Top Performer Card ──────────────────────────────────────────────────────
 
-  const { appearances, goals, awards, players } = data
-
-  const rows = useMemo(() =>
-    players.map(p => computePlayerRow(p, appearances, goals, awards)),
-    [players, appearances, goals, awards]
+function TopPerformerCard({ player, stat, value, icon, color, suffix = '' }) {
+  return (
+    <div className={`bg-gradient-to-br ${color} rounded-xl p-4 text-white relative overflow-hidden`}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-lg">{icon}</span>
+          <span className="text-xs font-medium uppercase tracking-wide opacity-90">{stat}</span>
+        </div>
+        <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-medium">
+          #{player.rank}
+        </span>
+      </div>
+      <div className="mb-1">
+        <h4 className="font-bold text-sm truncate">{player.name}</h4>
+      </div>
+      <div className="text-xl font-black">
+        {value}{suffix}
+      </div>
+      <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-white/10 rounded-full"></div>
+    </div>
   )
+}
+
+// ─── Stats Overview Cards ────────────────────────────────────────────────────
+
+function StatsOverview({ rows }) {
+  const hasTimingData = rows.some(r => r.hasGoalTiming)
+  const topMinutes = [...rows].sort((a, b) => b.totalMins - a.totalMins)[0]
+  const topGoals = [...rows].sort((a, b) => b.goalCount - a.goalCount)[0]
+  const topAssists = [...rows].sort((a, b) => b.assistCount - a.assistCount)[0]
+  const topAwards = [...rows].sort((a, b) => b.awardCount - a.awardCount)[0]
+
+  // Calculate clean quarters for defensive players (positions ending in B)
+  const topCleanDefensive = [...rows]
+    .map(row => ({
+      ...row,
+      cleanDefensiveQuarters: row.cleanAsDEF // This already represents clean quarters as defender
+    }))
+    .filter(row => row.cleanDefensiveQuarters > 0)
+    .sort((a, b) => b.cleanDefensiveQuarters - a.cleanDefensiveQuarters)[0]
+
+  return (
+    <div className="space-y-6">
+      {/* Top Performers Grid */}
+      <div>
+        <h3 className="text-sm font-semibold text-neutral-fg mb-4">Top Performers</h3>
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {topMinutes && (
+            <TopPerformerCard
+              player={{ name: topMinutes.name, rank: 1 }}
+              stat="Minutes"
+              value={Math.round(topMinutes.totalMins)}
+              icon="⏱️"
+              color="from-blue-500 to-blue-600"
+              suffix="'"
+            />
+          )}
+          {topGoals && topGoals.goalCount > 0 && (
+            <TopPerformerCard
+              player={{ name: topGoals.name, rank: 1 }}
+              stat="Goals"
+              value={topGoals.goalCount}
+              icon="⚽"
+              color="from-green-500 to-green-600"
+            />
+          )}
+          {topAssists && topAssists.assistCount > 0 && (
+            <TopPerformerCard
+              player={{ name: topAssists.name, rank: 1 }}
+              stat="Assists"
+              value={topAssists.assistCount}
+              icon="🎯"
+              color="from-purple-500 to-purple-600"
+            />
+          )}
+          {topAwards && topAwards.awardCount > 0 && (
+            <TopPerformerCard
+              player={{ name: topAwards.name, rank: 1 }}
+              stat="Star Player"
+              value={topAwards.awardCount}
+              icon="⭐"
+              color="from-yellow-500 to-yellow-600"
+            />
+          )}
+          {topCleanDefensive ? (
+            <TopPerformerCard
+              player={{ name: topCleanDefensive.name, rank: 1 }}
+              stat="Clean Quarters"
+              value={topCleanDefensive.cleanDefensiveQuarters}
+              icon="🛡️"
+              color="from-red-500 to-red-600"
+            />
+          ) : hasTimingData ? null : (
+            <div className="bg-neutral-card border border-neutral-border rounded-lg p-4 text-center">
+              <div className="text-2xl mb-2">🛡️</div>
+              <div className="text-sm font-semibold text-neutral-fg mb-1">Clean Quarters</div>
+              <div className="text-xs text-neutral-fg/60">Requires goal timing data</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Team Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-neutral-accent mb-1">
+            {rows.length}
+          </div>
+          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
+            Total Players
+          </div>
+        </div>
+        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-hornets-secondary mb-1">
+            {rows.reduce((sum, r) => sum + r.matches, 0)}
+          </div>
+          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
+            Total Appearances
+          </div>
+        </div>
+        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-hornets-tertiary mb-1">
+            {rows.reduce((sum, r) => sum + r.goalCount, 0)}
+          </div>
+          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
+            Total Goals
+          </div>
+        </div>
+        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
+          <div className="text-2xl font-bold text-hornets-quaternary mb-1">
+            {rows.reduce((sum, r) => sum + r.awardCount, 0)}
+          </div>
+          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
+            Star Awards
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Compact Stats Table ─────────────────────────────────────────────────────
+
+function CompactStatsTable({ rows, columns, title, hasTimingData }) {
+  const [sortKey, setSortKey] = useState(columns[0].key)
+  const [sortDir, setSortDir] = useState(-1)
 
   const sorted = useMemo(() =>
     [...rows].sort((a, b) => {
@@ -309,22 +448,113 @@ function PlayerStatsTable({ data }) {
     [rows, sortKey, sortDir]
   )
 
-  const maxes = useMemo(() => {
-    const m = {}
-    COLS.forEach(c => {
-      if (c.heat) m[c.key] = Math.max(...rows.map(r => Number(r[c.key]) || 0))
-    })
-    return m
-  }, [rows])
-
-  const hasTimingData = rows.some(r => r.hasGoalTiming)
-
   const toggleSort = (key) => {
     if (sortKey === key) setSortDir(d => -d)
     else { setSortKey(key); setSortDir(-1) }
   }
 
+  return (
+    <div className="space-y-4">
+      <h3 className="text-sm font-semibold text-neutral-fg">{title}</h3>
+      <div className="bg-neutral-card rounded-xl border border-neutral-border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="bg-neutral-secondary/50 border-b border-neutral-border">
+                <th className="sticky left-0 bg-neutral-secondary/50 z-10 text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[140px]">
+                  Player
+                </th>
+                {columns.map(col => (
+                  <th
+                    key={col.key}
+                    title={col.title}
+                    onClick={() => toggleSort(col.key)}
+                    className={`px-3 py-3 text-center font-semibold uppercase tracking-wide whitespace-nowrap cursor-pointer select-none transition-colors ${
+                      sortKey === col.key
+                        ? 'text-neutral-accent bg-neutral-accent/10'
+                        : 'text-neutral-muted hover:text-neutral-fg'
+                    } ${col.timingNeeded && !hasTimingData ? 'opacity-40' : ''}`}
+                  >
+                    {col.label}
+                    {sortKey === col.key && (
+                      <span className="ml-0.5 text-[10px]">{sortDir === -1 ? '↓' : '↑'}</span>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-border/50">
+              {sorted.map((row) => (
+                <tr key={row.id} className="hover:bg-neutral-secondary/30 transition-colors group">
+                  <td className="sticky left-0 bg-neutral-card group-hover:bg-neutral-secondary/30 transition-colors z-10 px-4 py-3 font-semibold text-neutral-fg whitespace-nowrap">
+                    <a href={`/players/${row.id}`} className="hover:text-neutral-accent transition-colors">{row.name}</a>
+                  </td>
+                  {columns.map(col => {
+                    const val = row[col.key]
+                    const isTimingCol = col.timingNeeded && !hasTimingData
+                    return (
+                      <td
+                        key={col.key}
+                        className={`px-3 py-3 text-center tabular-nums text-neutral-fg/80 whitespace-nowrap ${isTimingCol ? 'opacity-30' : ''}`}
+                      >
+                        {col.fmt(val)}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PlayerStatsTable({ data }) {
+  const [activeTab, setActiveTab] = useState('overview')
+
+  const { appearances, goals, awards, players } = data
+
+  const rows = useMemo(() =>
+    players.map(p => computePlayerRow(p, appearances, goals, awards)),
+    [players, appearances, goals, awards]
+  )
+
+  const hasTimingData = rows.some(r => r.hasGoalTiming)
+
   if (rows.length === 0) return null
+
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: '📊' },
+    { id: 'playing-time', label: 'Playing Time', icon: '⏱️' },
+    { id: 'attacking', label: 'Attacking', icon: '⚽' },
+    { id: 'defensive', label: 'Defensive', icon: '🛡️' },
+  ]
+
+  const playingTimeCols = [
+    { key: 'totalMins', label: 'Total Mins', title: 'Total minutes played', fmt: v => v > 0 ? `${Math.round(v)}'` : '—' },
+    { key: 'matches', label: 'MP', title: 'Matches played', fmt: v => v },
+    { key: 'avgMins', label: 'Avg/Match', title: 'Average playing time per match', fmt: v => v > 0 ? `${fmtDec(v,1)}'` : '—' },
+    { key: 'gkMins', label: 'GK Mins', title: 'Minutes as goalkeeper', fmt: v => v > 0 ? `${Math.round(v)}'` : '—' },
+    { key: 'defMins', label: 'DEF Mins', title: 'Minutes as defender', fmt: v => v > 0 ? `${Math.round(v)}'` : '—' },
+    { key: 'midMins', label: 'MID Mins', title: 'Minutes as midfielder', fmt: v => v > 0 ? `${Math.round(v)}'` : '—' },
+    { key: 'atkMins', label: 'ATK Mins', title: 'Minutes as attacker', fmt: v => v > 0 ? `${Math.round(v)}'` : '—' },
+  ]
+
+  const attackingCols = [
+    { key: 'goalCount', label: 'Goals', title: 'Total goals scored', fmt: v => v || '—' },
+    { key: 'assistCount', label: 'Assists', title: 'Total assists', fmt: v => v || '—' },
+    { key: 'goalsPerGame', label: 'G/Match', title: 'Goals per game', fmt: v => v > 0 ? fmtDec(v, 2) : '—' },
+    { key: 'assiPerGame', label: 'A/Match', title: 'Assists per game', fmt: v => v > 0 ? fmtDec(v, 2) : '—' },
+  ]
+
+  const defensiveCols = [
+    { key: 'cleanAsGK', label: 'CS GK', title: 'Clean quarters as GK', fmt: v => v || '—', timingNeeded: true },
+    { key: 'cleanAsDEF', label: 'CS DEF', title: 'Clean quarters as Defender', fmt: v => v || '—', timingNeeded: true },
+    { key: 'cleanGKPerGame', label: 'CS GK/Match', title: 'Clean quarters as GK per game', fmt: v => v > 0 ? fmtDec(v, 2) : '—', timingNeeded: true },
+    { key: 'cleanDEFPerGame', label: 'CS DEF/Match', title: 'Clean quarters as DEF per game', fmt: v => v > 0 ? fmtDec(v, 2) : '—', timingNeeded: true },
+  ]
 
   return (
     <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm overflow-hidden">
@@ -334,61 +564,59 @@ function PlayerStatsTable({ data }) {
           <span className="text-xs text-neutral-muted">CS columns require goal timing data</span>
         )}
       </div>
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-xs">
-          <thead>
-            <tr className="bg-neutral-secondary border-b border-neutral-border">
-              <th className="sticky left-0 bg-neutral-secondary z-10 text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[130px]">
-                Player
-              </th>
-              {COLS.map(col => (
-                <th
-                  key={col.key}
-                  title={col.title}
-                  onClick={() => toggleSort(col.key)}
-                  className={`px-2 py-3 text-center font-semibold uppercase tracking-wide whitespace-nowrap cursor-pointer select-none transition-colors ${
-                    sortKey === col.key
-                      ? 'text-neutral-accent bg-neutral-accent/10'
-                      : 'text-neutral-muted hover:text-neutral-fg'
-                  } ${col.timingNeeded && !hasTimingData ? 'opacity-40' : ''}`}
-                >
-                  {col.label}
-                  {sortKey === col.key && (
-                    <span className="ml-0.5 text-[10px]">{sortDir === -1 ? '↓' : '↑'}</span>
-                  )}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-neutral-border">
-            {sorted.map((row, ri) => (
-              <tr key={row.id} className="hover:bg-neutral-secondary/50 transition-colors group">
-                <td className="sticky left-0 bg-neutral-card group-hover:bg-neutral-secondary/50 transition-colors z-10 px-4 py-2.5 font-semibold text-neutral-fg whitespace-nowrap">
-                  <a href={`/players/${row.id}`} className="hover:text-neutral-accent transition-colors">{row.name}</a>
-                </td>
-                {COLS.map(col => {
-                  const val = row[col.key]
-                  const numVal = Number(val) || 0
-                  const style = col.heat ? heatBg(numVal, maxes[col.key]) : undefined
-                  const isTimingCol = col.timingNeeded && !hasTimingData
-                  return (
-                    <td
-                      key={col.key}
-                      style={style}
-                      className={`px-2 py-2.5 text-center tabular-nums text-neutral-fg/80 whitespace-nowrap ${isTimingCol ? 'opacity-30' : ''}`}
-                    >
-                      {col.fmt(val)}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {/* Tab Navigation */}
+      <div className="px-5 sm:px-6 py-3 border-b border-neutral-border">
+        <div className="flex gap-1 overflow-x-auto">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-neutral-accent text-neutral-bg shadow-sm'
+                  : 'text-neutral-muted hover:text-neutral-fg hover:bg-neutral-secondary'
+              }`}
+            >
+              <span>{tab.icon}</span>
+              <span>{tab.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="px-5 sm:px-6 py-3 border-t border-neutral-border flex flex-wrap gap-4 text-xs text-neutral-muted">
-        <span>Click column headers to sort</span>
-        <span>· Heatmap intensity = relative strength within the squad</span>
+
+      {/* Tab Content */}
+      <div className="p-5 sm:p-6">
+        {activeTab === 'overview' && (
+          <StatsOverview rows={rows} />
+        )}
+
+        {activeTab === 'playing-time' && (
+          <CompactStatsTable
+            rows={rows}
+            columns={playingTimeCols}
+            title="Playing Time Statistics"
+            hasTimingData={hasTimingData}
+          />
+        )}
+
+        {activeTab === 'attacking' && (
+          <CompactStatsTable
+            rows={rows}
+            columns={attackingCols}
+            title="Attacking Statistics"
+            hasTimingData={hasTimingData}
+          />
+        )}
+
+        {activeTab === 'defensive' && (
+          <CompactStatsTable
+            rows={rows}
+            columns={defensiveCols}
+            title="Defensive Statistics"
+            hasTimingData={hasTimingData}
+          />
+        )}
       </div>
     </div>
   )
@@ -419,6 +647,29 @@ export default function Home() {
   const ga     = played.reduce((s, m) => s + m.opposition_score, 0)
   const cs     = played.filter(m => m.opposition_score === 0).length
 
+  // Calculate clean sheets quarters (quarters with no goals conceded)
+  const cleanQuarters = played.reduce((total, match) => {
+    const matchLen = match.match_length_mins || 60
+    const quarterLen = matchLen / 8  // Each quarter = 2 eighths
+    
+    let matchCleanQuarters = 0
+    // Check each of the 4 quarters in each half (8 total)
+    for (const half of ['H1', 'H2']) {
+      for (let q = 1; q <= 4; q++) {
+        // Check if any goal was conceded in this quarter
+        const concededInQuarter = (match.goals || []).some(g => 
+          !g.for_histon && g.goal_half === half && g.goal_quarter === q
+        )
+        
+        if (!concededInQuarter) {
+          matchCleanQuarters++
+        }
+      }
+    }
+    
+    return total + matchCleanQuarters
+  }, 0)
+
   const recentForm = played.slice(0, 5).map(m =>
     m.histon_score > m.opposition_score ? 'W' :
     m.histon_score < m.opposition_score ? 'L' : 'D'
@@ -436,24 +687,172 @@ export default function Home() {
           <h2 className="text-lg font-bold text-neutral-fg">Season at a Glance</h2>
           {recentForm.length > 0 && (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-slate-400 mr-1">Form</span>
+              <span className="text-xs text-neutral-muted mr-1">Form</span>
               {recentForm.map((r, i) => (
                 <span key={i} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${RESULT_PILL[r]}`}>{r}</span>
               ))}
             </div>
           )}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           <StatCard label="Played"        value={played.length} accent="accent" />
           <StatCard label="Won"           value={wins}   accent="primary" sub={`${draws}D · ${losses}L`} />
           <StatCard label="Goals For"     value={gf}     accent="secondary" />
           <StatCard label="Goals Against" value={ga}     accent="tertiary" />
           <StatCard label="Clean Sheets"  value={cs}     accent="quaternary" />
+          <StatCard label="Clean Quarters" value={cleanQuarters} accent="violet" />
           <StatCard label="Goal Diff"
             value={gf - ga >= 0 ? `+${gf - ga}` : gf - ga}
             accent={gf - ga >= 0 ? 'secondary' : 'tertiary'}
           />
         </div>
+
+        {/* ── Season Charts ── */}
+        {played.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+            {/* Results Distribution */}
+            <div className="bg-gradient-to-br from-result-win/5 to-result-loss/5 rounded-2xl border border-neutral-border shadow-sm p-6">
+              <h3 className="text-base font-bold text-neutral-fg mb-6">Results Distribution</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { name: 'Wins', value: wins, fill: '#10b981' },
+                      { name: 'Draws', value: draws, fill: '#6b7280' },
+                      { name: 'Losses', value: losses, fill: '#ef4444' },
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  >
+                    <Cell fill="#10b981" />
+                    <Cell fill="#6b7280" />
+                    <Cell fill="#ef4444" />
+                  </Pie>
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#111827',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      color: '#f8fafc'
+                    }}
+                    formatter={(value) => [`${value} matches`, '']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Goals Comparison */}
+            <div className="bg-gradient-to-br from-hornets-secondary/5 to-hornets-tertiary/5 rounded-2xl border border-neutral-border shadow-sm p-6">
+              <h3 className="text-base font-bold text-neutral-fg mb-6">Goals & Defence Analysis</h3>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={[
+                  { category: 'Goals For', value: gf, fill: '#06b6d4' },
+                  { category: 'Goals Against', value: ga, fill: '#f97316' },
+                  { category: 'Clean Quarters', value: cleanQuarters, fill: '#8b5cf6' },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
+                  <XAxis dataKey="category" stroke="#64748b" />
+                  <YAxis stroke="#64748b" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: '#111827',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '8px',
+                      color: '#f8fafc'
+                    }}
+                    formatter={(value, name) => {
+                      if (name === 'value') {
+                        return [value, 'Count']
+                      }
+                      return [value, name]
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#1e3a8a" radius={[8, 8, 0, 0]}>
+                    {[
+                      { fill: '#06b6d4' },
+                      { fill: '#f97316' },
+                      { fill: '#8b5cf6' },
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-neutral-muted mt-4">
+                Clean Quarters: Quarters across all matches with zero goals conceded
+              </p>
+            </div>
+
+            {/* Match Timeline */}
+            {played.length > 1 && (
+              <div className="lg:col-span-2 bg-gradient-to-br from-neutral-accent/5 to-hornets-primary/5 rounded-2xl border border-neutral-border shadow-sm p-6">
+                <h3 className="text-base font-bold text-neutral-fg mb-6">Season Form Trend</h3>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={[...played].reverse().map((m, i) => {
+                    const { result } = getMatchResult(m.histon_score, m.opposition_score)
+                    return {
+                      match: i + 1,
+                      score: m.histon_score - m.opposition_score,
+                      for: m.histon_score,
+                      against: m.opposition_score,
+                      result,
+                      date: new Date(m.match_date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
+                    }
+                  })}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
+                    <XAxis dataKey="date" stroke="#64748b" angle={-45} textAnchor="end" height={80} />
+                    <YAxis stroke="#64748b" label={{ value: 'Goal Difference', angle: -90, position: 'insideLeft' }} />
+                    <ReferenceLine y={0} stroke="#64748b" strokeWidth={2} />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#111827',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        color: '#f8fafc'
+                      }}
+                      formatter={(value, name) => {
+                        if (name === 'score') return [value, 'Goal Diff']
+                        return [value, name]
+                      }}
+                    />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#06b6d4"
+                      strokeWidth={3}
+                      dot={(props) => {
+                        const { cx, cy, payload } = props
+                        const color = payload.result === 'W' ? '#10b981' : payload.result === 'L' ? '#ef4444' : '#6b7280'
+                        return (
+                          <circle cx={cx} cy={cy} r={5} fill={color} stroke="white" strokeWidth={2} />
+                        )
+                      }}
+                      activeDot={{ r: 7 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+                <p className="text-xs text-neutral-muted mt-4">
+                  <span className="inline-flex items-center gap-2 mr-4">
+                    <span className="w-3 h-3 rounded-full bg-result-win" /> Win
+                  </span>
+                  <span className="inline-flex items-center gap-2 mr-4">
+                    <span className="w-3 h-3 rounded-full bg-result-draw" /> Draw
+                  </span>
+                  <span className="inline-flex items-center gap-2 mr-4">
+                    <span className="w-3 h-3 rounded-full bg-result-loss" /> Loss
+                  </span>
+
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* ── Fixtures ── */}

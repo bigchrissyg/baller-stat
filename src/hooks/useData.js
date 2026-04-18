@@ -62,20 +62,21 @@ export const usePlayers = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setPlayers(await fetchPlayers())
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+  const load = async () => {
+    try {
+      setPlayers(await fetchPlayers())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     load()
   }, [])
 
-  return { players, loading, error }
+  return { players, loading, error, refetch: load }
 }
 
 export const usePlayer = (playerId) => {
@@ -83,21 +84,22 @@ export const usePlayer = (playerId) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
+  const load = async () => {
     if (!playerId) return
-    const load = async () => {
-      try {
-        setPlayer(await fetchPlayer(playerId))
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+    try {
+      setPlayer(await fetchPlayer(playerId))
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     load()
   }, [playerId])
 
-  return { player, loading, error }
+  return { player, loading, error, refetch: load }
 }
 
 export const usePlayerStats = (playerId) => {

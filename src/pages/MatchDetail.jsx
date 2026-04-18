@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useMatchDetail, usePlayers } from '../hooks/useData'
+import { useMatchDetail, usePlayers, useSeasons } from '../hooks/useData'
 import {
   updateMatch,
   insertPlayerAppearance,
@@ -17,6 +17,7 @@ import {
   getMatchResult,
   getMatchTypeColor,
   getPositionColor,
+  getPositionStyles,
   getMatchSegments,
   getPlayerSegmentPosition,
   getUniquePlayersFromAppearances,
@@ -31,23 +32,10 @@ const MATCH_TYPES = ['League', 'Cup', 'Friendly']
 const HALVES = ['H1', 'H2']
 const QUARTERS = [1, 2, 3, 4]
 
-// ─── Position colours ─────────────────────────────────────────────────────────
+// ─── Position colours (consolidated from utils) ──────────────────────────────
 
-const POS_STYLES = {
-  GK:  { solid: 'bg-purple-500 text-white',       ghost: 'bg-purple-100 text-purple-600 border border-dashed border-purple-400' },
-  CB:  { solid: 'bg-hornets-tertiary text-white',           ghost: 'bg-hornets-tertiary/10 text-hornets-tertiary border border-dashed border-hornets-tertiary' },
-  LB:  { solid: 'bg-hornets-tertiary text-white',           ghost: 'bg-hornets-tertiary/10 text-hornets-tertiary border border-dashed border-hornets-tertiary' },
-  RB:  { solid: 'bg-hornets-tertiary text-white',           ghost: 'bg-hornets-tertiary/10 text-hornets-tertiary border border-dashed border-hornets-tertiary' },
-  CM:  { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
-  CDM: { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
-  CAM: { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
-  LM:  { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
-  RM:  { solid: 'bg-hornets-quinary text-neutral-fg',   ghost: 'bg-hornets-quinary/20 text-hornets-quinary border border-dashed border-hornets-quinary' },
-  CF:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
-  LF:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
-  RF:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
-  ST:  { solid: 'bg-neutral-accent text-neutral-bg',          ghost: 'bg-neutral-accent/10 text-neutral-accent border border-dashed border-neutral-accent' },
-}
+// Helper to get styles for a position - uses centralized getPositionStyles from utils
+const getPOS_STYLES = (position) => getPositionStyles(position)
 
 const POS_GROUPS = [
   { label: 'GK',  positions: ['GK'] },
@@ -55,6 +43,31 @@ const POS_GROUPS = [
   { label: 'MID', positions: ['CDM', 'CM', 'CAM', 'LM', 'RM'] },
   { label: 'ATK', positions: ['CF', 'LF', 'RF', 'ST'] },
 ]
+
+// ─── Player Eligibility Filter ──────────────────────────────────────────────
+
+/**
+ * Filter players eligible for a match based on:
+ * - Active status
+ * - Season registration (for League/Cup matches only)
+ */
+function getEligiblePlayers(allPlayers, match) {
+  if (!allPlayers) return []
+  
+  // Only show active players
+  let eligible = allPlayers.filter(p => p.active !== false)
+  
+  // For League and Cup matches, filter by season registration
+  if ((match.match_type === 'League' || match.match_type === 'Cup') && match.season_id) {
+    eligible = eligible.filter(p => {
+      const playerSeasonIds = (p.player_seasons || []).map(ps => ps.season_id)
+      return playerSeasonIds.includes(match.season_id)
+    })
+  }
+  // For Friendly matches, all active players are eligible
+  
+  return eligible
+}
 
 // ─── Rich position dropdown ───────────────────────────────────────────────────
 
@@ -64,7 +77,7 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
   const triggerRef = useRef(null)
   const menuRef = useRef(null)
 
-  const solidStyles = value ? POS_STYLES[value] : null
+  const solidStyles = value ? getPOS_STYLES(value) : null
 
   const openMenu = () => {
     if (disabled) return
@@ -126,7 +139,7 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
                   <button
                     key={p}
                     onMouseDown={() => select(p)}
-                    className={`${POS_STYLES[p].solid} text-xs font-bold rounded px-2 py-0.5 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-neutral-muted' : ''}`}
+                    className={`${getPOS_STYLES(p).solid} text-xs font-bold rounded px-2 py-0.5 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-neutral-muted' : ''}`}
                   >
                     {p}
                   </button>
@@ -371,9 +384,12 @@ function LineupMatrix({ match, editMode, onRefetch }) {
   // Reset exclusions each time edit mode opens
   useEffect(() => { if (editMode) setExcluded(new Set()) }, [editMode])
 
-  // In edit mode with no appearances yet, show every player so the user can fill in who played
+  // Get eligible players based on season and active status
+  const eligiblePlayers = getEligiblePlayers(allPlayers, match)
+
+  // In edit mode with no appearances yet, show every eligible player so the user can fill in who played
   const matrixPlayers = editMode && allApps.length === 0
-    ? (allPlayers || []).filter(p => !excluded.has(p.id)).map(p => ({ id: p.id, name: p.name }))
+    ? eligiblePlayers.filter(p => !excluded.has(p.id)).map(p => ({ id: p.id, name: p.name }))
     : playersInMatch
 
   const getPlayerTotalMins = (playerId) =>
@@ -445,13 +461,14 @@ function LineupMatrix({ match, editMode, onRefetch }) {
         // Create new appearance
         const slot = segmentToAppearanceSlot(segment, matchLen)
         const result = await insertPlayerAppearance({ ...slot, player_id: playerId, match_id: match.id, position: newPos })
+        const playerName = allPlayers?.find(p => p.id === playerId)?.name || 'Unknown'
         updated.push({ 
           id: result?.id || Math.max(...updated.map(a => a.id || 0), 0) + 1,
           ...slot, 
           player_id: playerId, 
           match_id: match.id, 
           position: newPos,
-          players: { name: (allApps.find(a => a.player_id === playerId)?.players?.name) || 'Unknown' }
+          players: { name: playerName }
         })
       } else if (
         covering.length === 1 &&
@@ -472,6 +489,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
           time_start: segment.start,
           time_end: segment.end,
         })
+        const playerName = allPlayers?.find(p => p.id === playerId)?.name || 'Unknown'
         updated.push({
           id: result?.id || Math.max(...updated.map(a => a.id || 0), 0) + 1,
           player_id: playerId,
@@ -479,7 +497,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
           position: newPos,
           time_start: segment.start,
           time_end: segment.end,
-          players: { name: (allApps.find(a => a.player_id === playerId)?.players?.name) || 'Unknown' }
+          players: { name: playerName }
         })
       }
       
@@ -642,7 +660,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
                               onChange={newPos => handleCellChange(player.id, seg, newPos)}
                             />
                           ) : pos ? (
-                            <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold ${getPositionColor(pos)}`}>
+                            <span className={`inline-flex items-center justify-center w-14 h-6 rounded text-xs font-bold ${getPOS_STYLES(pos).solid}`}>
                               {pos}
                             </span>
                           ) : (
@@ -673,7 +691,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
               required
             >
               <option value="">Player…</option>
-              {allPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {eligiblePlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select
               className="border border-neutral-border rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-neutral-accent"
@@ -716,6 +734,10 @@ function LineupMatrix({ match, editMode, onRefetch }) {
 function GoalsSection({ match, editMode, onRefetch }) {
   const { players: allPlayers } = usePlayers()
   const matchLen = match.match_length_mins || 60
+  
+  // Get eligible players based on season and active status
+  const eligiblePlayers = getEligiblePlayers(allPlayers, match)
+  
   const [goals, setGoals] = useState(match.goals || [])
   const [form, setForm] = useState({
     scorer_player_id: '',
@@ -754,8 +776,8 @@ function GoalsSection({ match, editMode, onRefetch }) {
       })
       
       // Optimistically add to state
-      const scorer = form.scorer_player_id ? allPlayers?.find(p => p.id === Number(form.scorer_player_id)) : null
-      const assist = form.assist_player_id ? allPlayers?.find(p => p.id === Number(form.assist_player_id)) : null
+      const scorer = form.scorer_player_id ? eligiblePlayers?.find(p => p.id === Number(form.scorer_player_id)) : null
+      const assist = form.assist_player_id ? eligiblePlayers?.find(p => p.id === Number(form.assist_player_id)) : null
       setGoals([...goals, {
         id: result?.id || Math.max(...goals.map(a => a.id || 0), 0) + 1,
         scorer_player_id: form.scorer_player_id ? Number(form.scorer_player_id) : null,
@@ -782,6 +804,18 @@ function GoalsSection({ match, editMode, onRefetch }) {
   const histonGoals = goals.filter(g => g.for_histon)
   const oppGoals    = goals.filter(g => !g.for_histon)
 
+  // Split goals by half and interleave them chronologically
+  const h1Goals = goals.filter(g => g.half === 'H1').sort((a, b) => {
+    // Sort by quarter, then by creation order (index in original array)
+    const quarterDiff = (a.quarter ?? 0) - (b.quarter ?? 0)
+    return quarterDiff !== 0 ? quarterDiff : goals.indexOf(a) - goals.indexOf(b)
+  })
+  const h2Goals = goals.filter(g => g.half === 'H2').sort((a, b) => {
+    // Sort by quarter, then by creation order (index in original array)
+    const quarterDiff = (a.quarter ?? 0) - (b.quarter ?? 0)
+    return quarterDiff !== 0 ? quarterDiff : goals.indexOf(a) - goals.indexOf(b)
+  })
+
   const GoalTiming = ({ g }) => {
     if (!g.half) return null
     return (
@@ -793,25 +827,32 @@ function GoalsSection({ match, editMode, onRefetch }) {
 
   return (
     <div className="space-y-4">
-      {/* Half Time marker */}
+      {/* Kick Off marker */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-neutral-secondary" />
         <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-muted">Kick Off</span>
         <div className="flex-1 h-px bg-neutral-secondary" />
       </div>
 
-      {histonGoals.length === 0 && oppGoals.length === 0 && !editMode && (
+      {h1Goals.length === 0 && h2Goals.length === 0 && !editMode && (
         <p className="text-sm text-neutral-muted py-2 text-center">No goals recorded.</p>
       )}
 
-      {histonGoals.length > 0 && (
+      {/* First half goals */}
+      {h1Goals.length > 0 && (
         <div className="space-y-1.5">
-          {histonGoals.map(g => (
-            <div key={g.id} className="flex items-center gap-2.5 bg-neutral-accent/10 border border-neutral-accent/30 rounded-lg px-3 py-2">
+          {h1Goals.map(g => (
+            <div key={g.id} className={`flex items-center gap-2.5 rounded-lg px-3 py-2 border ${
+              g.for_histon 
+                ? 'bg-neutral-accent/10 border-neutral-accent/30' 
+                : 'bg-hornets-tertiary/10 border-hornets-tertiary/30'
+            }`}>
               <span className="text-base">⚽</span>
               <div className="flex-1 min-w-0">
-                <span className="font-semibold text-neutral-fg text-sm">{g.players?.name ?? 'Unknown'}</span>
-                {g.players_assist?.name && (
+                <span className={`text-sm ${g.for_histon ? 'font-semibold text-neutral-fg' : 'font-medium text-neutral-fg/70'}`}>
+                  {g.for_histon ? (g.players?.name ?? 'Unknown') : 'Opposition goal'}
+                </span>
+                {g.for_histon && g.players_assist?.name && (
                   <span className="text-neutral-muted text-xs ml-2">assist: {g.players_assist.name}</span>
                 )}
                 <GoalTiming g={g} />
@@ -820,13 +861,10 @@ function GoalsSection({ match, editMode, onRefetch }) {
                 <button onClick={async () => { 
                   setSaving(true)
                   try {
-                    // Optimistically remove from state
                     setGoals(goals.filter(goal => goal.id !== g.id))
-                    // Delete from server
                     await deleteGoal(g.id)
                   } catch (e) {
                     alert(e.message)
-                    // Refetch on error to sync state
                     await onRefetch()
                   } finally {
                     setSaving(false)
@@ -846,26 +884,33 @@ function GoalsSection({ match, editMode, onRefetch }) {
         <div className="flex-1 h-px bg-neutral-secondary" />
       </div>
 
-      {oppGoals.length > 0 && (
+      {/* Second half goals */}
+      {h2Goals.length > 0 && (
         <div className="space-y-1.5">
-          {oppGoals.map(g => (
-            <div key={g.id} className="flex items-center gap-2.5 bg-hornets-tertiary/10 border border-hornets-tertiary/30 rounded-lg px-3 py-2">
+          {h2Goals.map(g => (
+            <div key={g.id} className={`flex items-center gap-2.5 rounded-lg px-3 py-2 border ${
+              g.for_histon 
+                ? 'bg-neutral-accent/10 border-neutral-accent/30' 
+                : 'bg-hornets-tertiary/10 border-hornets-tertiary/30'
+            }`}>
               <span className="text-base">⚽</span>
               <div className="flex-1 min-w-0">
-                <span className="font-medium text-neutral-fg/70 text-sm">Opposition goal</span>
+                <span className={`text-sm ${g.for_histon ? 'font-semibold text-neutral-fg' : 'font-medium text-neutral-fg/70'}`}>
+                  {g.for_histon ? (g.players?.name ?? 'Unknown') : 'Opposition goal'}
+                </span>
+                {g.for_histon && g.players_assist?.name && (
+                  <span className="text-neutral-muted text-xs ml-2">assist: {g.players_assist.name}</span>
+                )}
                 <GoalTiming g={g} />
               </div>
               {editMode && (
                 <button onClick={async () => { 
                   setSaving(true)
                   try {
-                    // Optimistically remove from state
                     setGoals(goals.filter(goal => goal.id !== g.id))
-                    // Delete from server
                     await deleteGoal(g.id)
                   } catch (e) {
                     alert(e.message)
-                    // Refetch on error to sync state
                     await onRefetch()
                   } finally {
                     setSaving(false)
@@ -924,7 +969,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
               required={form.for_histon}
             >
               <option value="">{form.for_histon ? 'Scorer…' : 'Scorer (optional)…'}</option>
-              {allPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {eligiblePlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select
               className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
@@ -933,7 +978,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
               disabled={!form.for_histon}
             >
               <option value="">Assist (optional)…</option>
-              {allPlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {eligiblePlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <select
               className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent col-span-2 sm:col-span-3"
@@ -986,6 +1031,8 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
           players: { name: player.name }
         }])
       }
+      // Refresh match data to sync with server
+      await onRefetch()
     } catch (e) { 
       alert(e.message)
       // Refetch on error to sync state
@@ -1032,9 +1079,26 @@ export default function MatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { match, loading, error, refetch } = useMatchDetail(id)
+  const { seasons } = useSeasons()
   const [editMode, setEditMode] = useState(false)
   const [savingType, setSavingType] = useState(false)
+  const [savingScore, setSavingScore] = useState(false)
+  const [savingSeason, setSavingSeason] = useState(false)
+  const [savingLocation, setSavingLocation] = useState(false)
+  const [scores, setScores] = useState({ histon: '', opposition: '' })
+  const [seasonId, setSeasonId] = useState('')
   const [showDebug, setShowDebug] = useState(false)
+
+  // Initialize scores and season when match loads
+  useEffect(() => {
+    if (match) {
+      setScores({
+        histon: match.histon_score !== null ? String(match.histon_score) : '',
+        opposition: match.opposition_score !== null ? String(match.opposition_score) : '',
+      })
+      setSeasonId(match.season_id || '')
+    }
+  }, [match])
 
   const handleTypeChange = async (newType) => {
     setSavingType(true)
@@ -1043,6 +1107,45 @@ export default function MatchDetail() {
       await refetch()
     } catch (e) { alert(e.message) }
     finally { setSavingType(false) }
+  }
+
+  const handleScoreChange = async () => {
+    // Validate both scores are provided
+    if (scores.histon === '' || scores.opposition === '') {
+      alert('Please enter both scores')
+      return
+    }
+    
+    setSavingScore(true)
+    try {
+      await updateMatch(id, {
+        histon_score: parseInt(scores.histon, 10),
+        opposition_score: parseInt(scores.opposition, 10),
+      })
+      await refetch()
+    } catch (e) { 
+      alert('Error saving scores: ' + e.message)
+    } finally { 
+      setSavingScore(false) 
+    }
+  }
+
+  const handleSeasonChange = async (newSeasonId) => {
+    setSavingSeason(true)
+    try {
+      await updateMatch(id, { season_id: newSeasonId || null })
+      await refetch()
+    } catch (e) { alert(e.message) }
+    finally { setSavingSeason(false) }
+  }
+
+  const handleLocationChange = async (newLocation) => {
+    setSavingLocation(true)
+    try {
+      await updateMatch(id, { location: newLocation })
+      await refetch()
+    } catch (e) { alert(e.message) }
+    finally { setSavingLocation(false) }
   }
 
   if (loading) return <div className="max-w-5xl mx-auto px-4 py-8"><Spinner message="Loading match…" /></div>
@@ -1054,7 +1157,7 @@ export default function MatchDetail() {
   if (!match) return null
 
   const { result, color: resultColor } = getMatchResult(match.histon_score, match.opposition_score)
-  const hasResult = match.histon_score !== null
+  const hasResult = match.histon_score !== null && match.opposition_score !== null
 
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -1106,26 +1209,129 @@ export default function MatchDetail() {
                   {match.match_type}
                 </span>
               )}
-              <span className="text-xs text-neutral-muted">{match.location === 'H' ? 'Home' : 'Away'}</span>
+              {/* Location — editable in edit mode */}
+              {editMode ? (
+                <select
+                  value={match.location}
+                  disabled={savingLocation}
+                  onChange={e => handleLocationChange(e.target.value)}
+                  className="text-xs font-semibold rounded-full px-2.5 py-1 bg-neutral-card/10 text-white border border-white/20 focus:outline-none focus:ring-1 focus:ring-neutral-accent disabled:opacity-50"
+                >
+                  <option value="H">Home</option>
+                  <option value="A">Away</option>
+                </select>
+              ) : (
+                <span className="text-xs text-neutral-muted">{match.location === 'H' ? 'Home' : 'Away'}</span>
+              )}
               <span className="text-xs text-neutral-muted">·</span>
               <span className="text-xs text-neutral-muted">{formatDate(match.match_date)}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold text-white">vs {match.opposition}</h1>
-            <p className="text-neutral-muted text-sm mt-1">{match.seasons?.name} · {match.match_length_mins} mins</p>
+            <p className="text-neutral-muted text-sm mt-1">
+              {editMode ? (
+                <select
+                  value={seasonId}
+                  disabled={savingSeason}
+                  onChange={e => {
+                    setSeasonId(e.target.value)
+                    handleSeasonChange(e.target.value)
+                  }}
+                  className="text-sm bg-neutral-card/20 text-white border border-white/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-neutral-accent disabled:opacity-50"
+                >
+                  <option value="">— No season —</option>
+                  {seasons.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              ) : (
+                <span>{match.seasons?.name || '— No season —'}</span>
+              )}
+              <span> · {match.match_length_mins} mins</span>
+            </p>
           </div>
 
           {hasResult && (
             <div className="text-right shrink-0">
-              <div className="text-4xl sm:text-5xl font-black text-white leading-none">
-                {match.histon_score}<span className="text-neutral-muted/80 mx-1">–</span>{match.opposition_score}
-              </div>
-              <span className={`inline-block mt-2 text-sm font-bold px-3 py-1 rounded-full ${resultColor}`}>
-                {result === 'W' ? 'Win' : result === 'L' ? 'Loss' : 'Draw'}
-              </span>
+              {editMode ? (
+                <div className="flex items-center gap-2 justify-end">
+                  <input
+                    type="number"
+                    min="0"
+                    disabled={savingScore}
+                    value={scores.histon}
+                    onChange={e => setScores(s => ({ ...s, histon: e.target.value }))}
+                    className="w-16 text-3xl font-black text-center bg-neutral-card/20 border border-white/30 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-neutral-accent"
+                  />
+                  <span className="text-neutral-muted/80 text-3xl mx-1">–</span>
+                  <input
+                    type="number"
+                    min="0"
+                    disabled={savingScore}
+                    value={scores.opposition}
+                    onChange={e => setScores(s => ({ ...s, opposition: e.target.value }))}
+                    className="w-16 text-3xl font-black text-center bg-neutral-card/20 border border-white/30 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-neutral-accent"
+                  />
+                  <button
+                    onClick={handleScoreChange}
+                    disabled={savingScore || scores.histon === '' || scores.opposition === ''}
+                    className="ml-2 px-3 py-1 bg-neutral-accent text-neutral-bg text-sm font-semibold rounded-lg hover:bg-neutral-accent/90 transition-colors disabled:opacity-50"
+                  >
+                    {savingScore ? 'Saving…' : '✓ Save'}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="text-4xl sm:text-5xl font-black text-white leading-none">
+                    {match.histon_score}<span className="text-neutral-muted/80 mx-1">–</span>{match.opposition_score}
+                  </div>
+                  <span className={`inline-block mt-2 text-sm font-bold px-3 py-1 rounded-full ${resultColor}`}>
+                    {result === 'W' ? 'Win' : result === 'L' ? 'Loss' : 'Draw'}
+                  </span>
+                </>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* ── Score input for upcoming matches in edit mode ── */}
+      {!hasResult && editMode && (
+        <div className="bg-neutral-secondary/50 border border-neutral-border rounded-2xl p-5 sm:p-6">
+          <h3 className="text-base font-bold text-neutral-fg mb-4">Add Match Score</h3>
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-2">Our Score</label>
+              <input
+                type="number"
+                min="0"
+                disabled={savingScore}
+                value={scores.histon}
+                onChange={e => setScores(s => ({ ...s, histon: e.target.value }))}
+                placeholder="0"
+                className="w-full text-2xl font-black text-center bg-neutral-card border border-neutral-border rounded-lg px-3 py-2 text-neutral-fg focus:outline-none focus:ring-2 focus:ring-neutral-accent"
+              />
+            </div>
+            <span className="text-2xl text-neutral-muted/80 mb-2">–</span>
+            <div className="flex-1">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-2">Opposition Score</label>
+              <input
+                type="number"
+                min="0"
+                disabled={savingScore}
+                value={scores.opposition}
+                onChange={e => setScores(s => ({ ...s, opposition: e.target.value }))}
+                placeholder="0"
+                className="w-full text-2xl font-black text-center bg-neutral-card border border-neutral-border rounded-lg px-3 py-2 text-neutral-fg focus:outline-none focus:ring-2 focus:ring-neutral-accent"
+              />
+            </div>
+            <button
+              onClick={handleScoreChange}
+              disabled={savingScore || scores.histon === '' || scores.opposition === ''}
+              className="px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 mb-2"
+            >
+              {savingScore ? 'Saving…' : 'Add Score'}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── Match stats ── */}
       {hasResult && (
@@ -1172,7 +1378,7 @@ export default function MatchDetail() {
           const dbgLen = match.match_length_mins || 60
           const dbgSegs = Array.from({ length: 8 }, (_, i) => ({ start: i * dbgLen / 8, end: (i + 1) * dbgLen / 8 }))
           return (
-            <div className="bg-slate-900 text-emerald-300 p-5 font-mono text-xs overflow-x-auto">
+            <div className="bg-slate-900 text-blue-300 p-5 font-mono text-xs overflow-x-auto">
               <p className="text-neutral-muted mb-3">match_id={match.id} · match_length={dbgLen}</p>
               <table className="w-full border-collapse">
                 <thead>
@@ -1195,8 +1401,8 @@ export default function MatchDetail() {
                           <td className="pr-4 py-0.5 text-neutral-muted/70">{a.players?.name ?? '?'}</td>
                           <td className="pr-4 py-0.5">{a.time_start}</td>
                           <td className="pr-4 py-0.5">{a.time_end}</td>
-                          <td className="pr-4 py-0.5 text-emerald-400 font-bold">{a.position}</td>
-                          <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-hornets-tertiary' : 'text-emerald-400'}`}>
+                          <td className="pr-4 py-0.5 text-blue-400 font-bold">{a.position}</td>
+                          <td className={`pr-4 py-0.5 ${hits.length === 0 ? 'text-hornets-tertiary' : 'text-blue-400'}`}>
                             {hits.length === 0 ? 'NONE' : `[${hits.join(',')}]`}
                           </td>
                         </tr>

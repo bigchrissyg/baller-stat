@@ -6,7 +6,18 @@
 CREATE TABLE IF NOT EXISTS seasons (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   name TEXT NOT NULL,
+  active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT now()
+);
+
+-- ─── Player Seasons (registration for league seasons) ──────────────────────
+
+CREATE TABLE IF NOT EXISTS player_seasons (
+  id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  player_id BIGINT NOT NULL REFERENCES players(id) ON DELETE CASCADE,
+  season_id BIGINT NOT NULL REFERENCES seasons(id) ON DELETE CASCADE,
+  created_at TIMESTAMP DEFAULT now(),
+  UNIQUE(player_id, season_id)
 );
 
 -- ─── Players ────────────────────────────────────────────────────────────────
@@ -14,6 +25,7 @@ CREATE TABLE IF NOT EXISTS seasons (
 CREATE TABLE IF NOT EXISTS players (
   id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   name TEXT NOT NULL,
+  active BOOLEAN DEFAULT true,
   created_at TIMESTAMP DEFAULT now()
 );
 
@@ -76,6 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_goals_match_id ON goals(match_id);
 CREATE INDEX IF NOT EXISTS idx_goals_scorer_player_id ON goals(scorer_player_id);
 CREATE INDEX IF NOT EXISTS idx_star_player_awards_match_id ON star_player_awards(match_id);
 CREATE INDEX IF NOT EXISTS idx_star_player_awards_player_id ON star_player_awards(player_id);
+CREATE INDEX IF NOT EXISTS idx_player_seasons_player_id ON player_seasons(player_id);
+CREATE INDEX IF NOT EXISTS idx_player_seasons_season_id ON player_seasons(season_id);
 
 -- ─── Sample Data (Optional - insert your team info) ──────────────────────
 

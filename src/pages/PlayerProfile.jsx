@@ -1,6 +1,7 @@
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { usePlayer, usePlayerStats } from '../hooks/useData'
-import { calculatePlayerAggregateStats } from '../lib/supabase'
+import { usePlayer, usePlayerStats, useSeasons } from '../hooks/useData'
+import { calculatePlayerAggregateStats, updatePlayer, insertPlayerSeason, deletePlayerSeason } from '../lib/supabase'
 import { formatDate, getPositionColor, getMatchResult, getInitials } from '../lib/utils'
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
@@ -9,8 +10,12 @@ import PlayerStatsCharts from '../components/PlayerStatsCharts'
 export default function PlayerProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { player, loading: playerLoading } = usePlayer(id)
+  const { player, loading: playerLoading, refetch: refetchPlayer } = usePlayer(id)
   const { stats, loading: statsLoading, error } = usePlayerStats(id)
+  const { seasons } = useSeasons()
+  
+  const [isManaging, setIsManaging] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const loading = playerLoading || statsLoading
 
@@ -21,6 +26,36 @@ export default function PlayerProfile() {
     </div>
   )
   if (!player || !stats) return null
+
+  const playerSeasonIds = (player.player_seasons || []).map(ps => ps.season_id)
+  
+  const handleToggleActive = async () => {
+    setSaving(true)
+    try {
+      await updatePlayer(player.id, { active: !player.active })
+      await refetchPlayer()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleToggleSeason = async (seasonId) => {
+    setSaving(true)
+    try {
+      if (playerSeasonIds.includes(seasonId)) {
+        await deletePlayerSeason(player.id, seasonId)
+      } else {
+        await insertPlayerSeason(player.id, seasonId)
+      }
+      await refetchPlayer()
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const agg = calculatePlayerAggregateStats(stats)
   const { appearances } = stats
@@ -66,7 +101,80 @@ export default function PlayerProfile() {
         </div>
       </div>
 
-      {/* ── Season stats ── */}
+      {/* ── Season & Active Status Management ── */}
+      <div className="bg-neutral-card border border-neutral-border rounded-2xl p-5 sm:p-6 space-y-4">
+        <div className="flex items-center justify-between gap-4 pb-4 border-b border-neutral-border">
+          <div>
+            <h3 className="text-sm font-semibold text-neutral-fg">Status</h3>
+            <p className="text-xs text-neutral-muted mt-1">
+              {player.active ? 'Active - Available for matches' : 'Inactive - Hidden from dropdowns'}
+            </p>
+          </div>
+          <button
+            onClick={handleToggleActive}
+            disabled={saving}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+              player.active
+                ? 'bg-green-100/50 text-green-700 hover:bg-green-100'
+                : 'bg-neutral-secondary text-neutral-muted hover:bg-neutral-secondary/70'
+            } disabled:opacity-50`}
+          >
+            {player.active ? 'Active' : 'Inactive'}
+          </button>
+        </div>
+
+        {isManaging ? (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-neutral-fg">Register for Seasons</h3>
+            <p className="text-xs text-neutral-muted mb-3">Select which league seasons this player is registered for</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {seasons.map(season => (
+                <button
+                  key={season.id}
+                  onClick={() => handleToggleSeason(season.id)}
+                  disabled={saving}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    playerSeasonIds.includes(season.id)
+                      ? 'bg-neutral-accent text-white'
+                      : 'bg-neutral-secondary text-neutral-muted hover:bg-neutral-secondary/70'
+                  } disabled:opacity-50`}
+                >
+                  {season.name}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setIsManaging(false)}
+              className="mt-3 text-xs font-medium text-neutral-accent hover:text-neutral-accent/80 transition-colors"
+            >
+              Done
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-start justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-neutral-fg">Seasons</h3>
+              {playerSeasonIds.length > 0 ? (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {(player.player_seasons || []).map(ps => (
+                    <span key={ps.season_id} className="bg-neutral-accent/20 text-neutral-accent text-xs font-medium px-2 py-1 rounded">
+                      {ps.seasons?.name}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-muted mt-1">Not registered for any seasons</p>
+              )}
+            </div>
+            <button
+              onClick={() => setIsManaging(true)}
+              className="text-xs font-medium text-neutral-accent hover:text-neutral-accent/80 transition-colors"
+            >
+              Edit
+            </button>
+          </div>
+        )}
+      </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Matches"     value={agg.matches}           accent="indigo" />
         <StatCard label="Goals"       value={agg.goals}             accent="emerald" />
