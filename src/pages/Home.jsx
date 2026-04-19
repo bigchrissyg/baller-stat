@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useMatches, useSeasons, useAllPlayersStats } from '../hooks/useData'
 import { createMatch } from '../lib/supabase'
 import { formatDate, formatDateShort, getMatchResult, getMatchTypeColor, getPositionGroup } from '../lib/utils'
@@ -132,7 +133,7 @@ function FixtureRow({ match }) {
   return (
     <button
       onClick={() => navigate(`/matches/${match.id}`)}
-      className="w-full text-left bg-neutral-surface shadow-card rounded-md hover:shadow-card-hover transition-shadow p-4 sm:p-5 flex items-center gap-4"
+      className="w-full text-left bg-neutral-surface shadow-card rounded-md hover:shadow-card-hover transition-shadow p-3 sm:p-5 flex items-center gap-2 sm:gap-4"
     >
       <div className="hidden sm:block w-16 text-center shrink-0">
         <p className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
@@ -151,13 +152,13 @@ function FixtureRow({ match }) {
             {match.location === 'H' ? 'Home' : 'Away'}
           </span>
         </div>
-        <p className="text-base font-semibold text-neutral-fg truncate">vs {match.opposition}</p>
+        <p className="text-sm sm:text-base font-semibold text-neutral-fg truncate">vs {match.opposition}</p>
         <p className="text-xs text-neutral-muted mt-0.5">{match.seasons?.name}</p>
       </div>
       <div className="shrink-0 text-right">
         {hasScore ? (
           <>
-            <p className="text-xl font-bold font-mono text-neutral-fg leading-none">{match.histon_score}–{match.opposition_score}</p>
+            <p className="text-base sm:text-xl font-bold font-mono text-neutral-fg leading-none">{match.histon_score}–{match.opposition_score}</p>
             <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${RESULT_PILL[result] || 'bg-neutral-secondary text-neutral-fg'}`}>{result}</span>
           </>
         ) : (
@@ -367,12 +368,12 @@ function StatsOverview({ rows }) {
   return (
     <div className="space-y-6">
       {/* Team Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {summaryCards.map(({ label, value, icon, bg, ring }) => (
-          <div key={label} className={`${bg} ring-4 ${ring} rounded-2xl p-5 text-white shadow-card-md flex flex-col gap-2`}>
-            <span className="text-2xl leading-none">{icon}</span>
-            <div className="text-3xl font-bold font-mono leading-none">{value}</div>
-            <div className="text-xs font-semibold uppercase tracking-widest text-white/70">{label}</div>
+          <div key={label} className={`${bg} ring-4 ${ring} rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-card-md flex flex-col gap-1.5 sm:gap-2`}>
+            <span className="text-xl sm:text-2xl leading-none">{icon}</span>
+            <div className="text-2xl sm:text-3xl font-bold font-mono leading-none">{value}</div>
+            <div className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-white/70">{label}</div>
           </div>
         ))}
       </div>
@@ -380,7 +381,7 @@ function StatsOverview({ rows }) {
       {/* Top Performers */}
       <div>
         <h3 className="text-sm font-semibold uppercase tracking-widest text-neutral-muted mb-3">Top Performers</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2 sm:gap-3">
           {topMinutes.length > 0 && (
             <TopPerformersTable title="Avg Minutes" data={topMinutes} icon="⏱️" theme="navy" suffix="'" />
           )}
@@ -549,9 +550,9 @@ function PlayerStatsTable({ data }) {
   return (
     <div className="rounded-2xl border border-neutral-border shadow-card-md overflow-hidden bg-neutral-surface">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#1E3A5F] to-[#1E3A5F]/85 px-5 sm:px-6 py-5 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-[#1E3A5F] to-[#1E3A5F]/85 px-4 sm:px-6 py-4 sm:py-5 flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-white">Player Statistics</h2>
+          <h2 className="text-lg sm:text-2xl font-semibold tracking-tight text-white">Player Statistics</h2>
           <p className="text-xs text-white/50 mt-0.5 font-medium uppercase tracking-widest">Season Performance</p>
         </div>
         {!hasTimingData && (
@@ -560,7 +561,7 @@ function PlayerStatsTable({ data }) {
       </div>
 
       {/* Tab Navigation */}
-      <div className="px-5 sm:px-6 py-3 border-b border-neutral-border bg-neutral-bg/50">
+      <div className="px-3 sm:px-6 py-2 sm:py-3 border-b border-neutral-border bg-neutral-bg/50">
         <div className="flex gap-1 overflow-x-auto">
           {tabs.map(tab => {
             const isActive = activeTab === tab.id
@@ -583,7 +584,7 @@ function PlayerStatsTable({ data }) {
       </div>
 
       {/* Tab Content */}
-      <div className="p-5 sm:p-6">
+      <div className="p-3 sm:p-6">
         {activeTab === 'overview' && (
           <StatsOverview rows={rows} />
         )}
@@ -666,12 +667,12 @@ function FormTrendChart({ played }) {
   return (
     <div className="bg-neutral-surface rounded-2xl border border-neutral-border shadow-card-md overflow-hidden">
       {/* Card header */}
-      <div className="px-5 sm:px-6 pt-5 pb-0 flex items-start justify-between gap-4 flex-wrap">
+      <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-0 flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight text-neutral-fg">Season Form</h2>
+          <h2 className="text-lg sm:text-2xl font-semibold tracking-tight text-neutral-fg">Season Form</h2>
           <p className="text-xs text-neutral-muted mt-0.5">{chartData.length} matches · goal difference trend</p>
         </div>
-        <div className="flex items-center gap-2 pt-1">
+        <div className="flex items-center gap-1.5 sm:gap-2 pt-1">
           {[
             { count: wins,   color: '#00D68F', textColor: '#059669', label: 'W' },
             { count: draws,  color: '#94A3B8', textColor: '#64748B', label: 'D' },
@@ -689,8 +690,8 @@ function FormTrendChart({ played }) {
       </div>
 
       {/* Area chart */}
-      <div className="px-2 pb-0 pt-2">
-        <ResponsiveContainer width="100%" height={240}>
+      <div className="px-2 pb-0 pt-2 h-[170px] sm:h-[240px]">
+        <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData} margin={{ top: 16, right: 24, bottom: 48, left: 10 }}>
             <defs>
               <linearGradient id="formGradient" x1="0" y1="0" x2="0" y2="1">
@@ -731,7 +732,7 @@ function FormTrendChart({ played }) {
       </div>
 
       {/* Per-match result strip */}
-      <div className="px-5 sm:px-6 pb-5 pt-1 flex items-center gap-1.5 flex-wrap border-t border-neutral-border/60 mt-2">
+      <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 flex items-center gap-1 sm:gap-1.5 flex-wrap border-t border-neutral-border/60 mt-2">
         <span className="text-xs text-neutral-muted font-medium mr-1 uppercase tracking-widest">Results</span>
         {chartData.map((d, i) => (
           <div
@@ -752,6 +753,7 @@ function FormTrendChart({ played }) {
 
 export default function Home() {
   const navigate = useNavigate()
+  const { canEdit } = useAuth()
   const { matches, loading, error } = useMatches()
   const { data: statsData, loading: statsLoading } = useAllPlayersStats()
   const [filter, setFilter] = useState('All')
@@ -805,7 +807,7 @@ export default function Home() {
   const filtered = filter === 'All' ? matches : matches.filter(m => m.match_type === filter)
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
 
       {/* ── Season Form Trend ── */}
       {played.length > 1 && (
@@ -816,8 +818,8 @@ export default function Home() {
 
       {/* ── Season at a Glance ── */}
       <section>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-semibold tracking-tight text-neutral-fg">Season at a Glance</h2>
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <h2 className="text-lg sm:text-2xl font-semibold tracking-tight text-neutral-fg">Season at a Glance</h2>
           {recentForm.length > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-neutral-muted mr-1">Form</span>
@@ -827,7 +829,7 @@ export default function Home() {
             </div>
           )}
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        <div className="grid grid-cols-4 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3">
           <StatCard label="Played"        value={played.length} accent="accent" />
           <StatCard label="Won"           value={wins}   accent="primary" sub={`${draws}D · ${losses}L`} />
           <StatCard label="Goals For"     value={gf}     accent="secondary" />
@@ -843,7 +845,7 @@ export default function Home() {
 
       {/* ── Fixtures ── */}
       <section>
-        <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4 flex-wrap">
           <div className="flex items-center gap-1 bg-neutral-surface shadow-card rounded-lg p-1">
             {MATCH_TYPES.map(t => (
               <button key={t} onClick={() => setFilter(t)}
@@ -853,22 +855,24 @@ export default function Home() {
               >{t}</button>
             ))}
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-white text-sm font-semibold rounded-lg transition-colors shadow-btn"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Fixture
-          </button>
+          {canEdit && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-white text-sm font-semibold rounded-lg transition-colors shadow-btn"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Fixture
+            </button>
+          )}
         </div>
         {filtered.length === 0 ? (
           <div className="text-center py-16 text-neutral-muted text-sm">
             No {filter !== 'All' ? filter.toLowerCase() : ''} fixtures found
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-1.5 sm:space-y-2.5">
             {filtered.map(m => <FixtureRow key={m.id} match={m} />)}
           </div>
         )}
@@ -879,9 +883,9 @@ export default function Home() {
         <section>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Results Distribution */}
-            <div className="bg-gradient-to-br from-result-win/5 to-result-loss/5 rounded-2xl border border-neutral-border shadow-sm p-6">
-              <h3 className="text-2xl font-semibold tracking-tight text-neutral-fg mb-6">Results Distribution</h3>
-              <ResponsiveContainer width="100%" height={280}>
+            <div className="bg-gradient-to-br from-result-win/5 to-result-loss/5 rounded-2xl border border-neutral-border shadow-sm p-4 sm:p-6">
+              <h3 className="text-base sm:text-2xl font-semibold tracking-tight text-neutral-fg mb-3 sm:mb-6">Results Distribution</h3>
+              <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
                     data={[
@@ -915,9 +919,9 @@ export default function Home() {
             </div>
 
             {/* Goals Comparison */}
-            <div className="bg-gradient-to-br from-hornets-secondary/5 to-hornets-tertiary/5 rounded-2xl border border-neutral-border shadow-sm p-6">
-              <h3 className="text-2xl font-semibold tracking-tight text-neutral-fg mb-6">Goals & Defence Analysis</h3>
-              <ResponsiveContainer width="100%" height={280}>
+            <div className="bg-gradient-to-br from-hornets-secondary/5 to-hornets-tertiary/5 rounded-2xl border border-neutral-border shadow-sm p-4 sm:p-6">
+              <h3 className="text-base sm:text-2xl font-semibold tracking-tight text-neutral-fg mb-3 sm:mb-6">Goals & Defence Analysis</h3>
+              <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={[
                   { category: 'Goals For', value: gf, fill: '#06b6d4' },
                   { category: 'Goals Against', value: ga, fill: '#f97316' },
@@ -971,7 +975,7 @@ export default function Home() {
         ) : null}
       </section>
 
-      {showModal && (
+      {canEdit && showModal && (
         <AddFixtureModal
           onClose={() => setShowModal(false)}
           onCreated={(id) => navigate(`/matches/${id}`)}

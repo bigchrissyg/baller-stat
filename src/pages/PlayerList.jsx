@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useAllPlayersStats, useMatches } from '../hooks/useData'
 import { insertPlayer } from '../lib/supabase'
 import { getInitials } from '../lib/utils'
@@ -56,6 +57,7 @@ function AttendanceBar({ playerApps, allMatches }) {
 }
 
 export default function PlayerList() {
+  const { canEdit } = useAuth()
   const { data: statsData, loading: statsLoading, refetch: refetchStats } = useAllPlayersStats()
   const { matches, loading: matchesLoading } = useMatches()
   const [newPlayerName, setNewPlayerName] = useState('')
@@ -113,26 +115,28 @@ export default function PlayerList() {
       </div>
 
       {/* Add player */}
-      <form onSubmit={handleAddPlayer} className="bg-neutral-surface border border-neutral-border rounded-xl p-4">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newPlayerName}
-            onChange={e => setNewPlayerName(e.target.value)}
-            placeholder="Player name…"
-            className="flex-1 px-3 py-2 rounded-lg border border-neutral-border text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent bg-neutral-bg text-neutral-fg"
-            disabled={adding}
-          />
-          <button
-            type="submit"
-            disabled={adding || !newPlayerName.trim()}
-            className="px-4 py-2 bg-neutral-accent text-white text-sm font-semibold rounded-lg hover:bg-neutral-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {adding ? '…' : '+ Add'}
-          </button>
-        </div>
-        {addError && <p className="mt-2 text-xs text-[#E8354A]">{addError}</p>}
-      </form>
+      {canEdit && (
+        <form onSubmit={handleAddPlayer} className="bg-neutral-surface border border-neutral-border rounded-xl p-4">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newPlayerName}
+              onChange={e => setNewPlayerName(e.target.value)}
+              placeholder="Player name…"
+              className="flex-1 px-3 py-2 rounded-lg border border-neutral-border text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent bg-neutral-bg text-neutral-fg"
+              disabled={adding}
+            />
+            <button
+              type="submit"
+              disabled={adding || !newPlayerName.trim()}
+              className="px-4 py-2 bg-neutral-accent text-white text-sm font-semibold rounded-lg hover:bg-neutral-accent/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {adding ? '…' : '+ Add'}
+            </button>
+          </div>
+          {addError && <p className="mt-2 text-xs text-[#E8354A]">{addError}</p>}
+        </form>
+      )}
 
       {/* Attendance legend */}
       {matches.length > 0 && (

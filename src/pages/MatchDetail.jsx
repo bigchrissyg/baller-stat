@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, Fragment } from 'react'
 import { createPortal } from 'react-dom'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { useMatchDetail, usePlayers, useSeasons } from '../hooks/useData'
 import {
   updateMatch,
@@ -1078,6 +1079,7 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
 export default function MatchDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { canEdit } = useAuth()
   const { match, loading, error, refetch } = useMatchDetail(id)
   const { seasons } = useSeasons()
   const [editMode, setEditMode] = useState(false)
@@ -1173,20 +1175,22 @@ export default function MatchDetail() {
           </svg>
           Dashboard
         </button>
-        <button
-          onClick={() => setEditMode(e => !e)}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-            editMode
-              ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-              : 'bg-neutral-secondary text-neutral-fg/70 hover:bg-slate-200'
-          }`}
-        >
-          {editMode ? (
-            <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Done Editing</>
-          ) : (
-            <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> Edit Match</>
-          )}
-        </button>
+        {canEdit && (
+          <button
+            onClick={() => setEditMode(e => !e)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+              editMode
+                ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                : 'bg-neutral-secondary text-neutral-fg/70 hover:bg-slate-200'
+            }`}
+          >
+            {editMode ? (
+              <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Done Editing</>
+            ) : (
+              <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg> Edit Match</>
+            )}
+          </button>
+        )}
       </div>
 
       {/* ── Match header ── */}

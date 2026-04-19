@@ -11,13 +11,13 @@ export default function StatCard({ label, value, sub, accent = 'accent', icon })
   }
 
   return (
-    <div className="bg-white shadow-card rounded-md p-5 hover:shadow-card-hover transition-shadow">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold uppercase tracking-widest text-neutral-muted">{label}</p>
-        {icon && <span className="text-lg">{icon}</span>}
+    <div className="bg-white shadow-card rounded-md p-3 sm:p-5 hover:shadow-card-hover transition-shadow">
+      <div className="flex items-center justify-between mb-1.5 sm:mb-3">
+        <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-widest text-neutral-muted leading-tight">{label}</p>
+        {icon && <span className="text-base sm:text-lg">{icon}</span>}
       </div>
-      <p className={`text-3xl font-bold font-mono leading-none ${valueClass}`}>{value}</p>
-      {sub && <p className="text-xs text-neutral-muted mt-2">{sub}</p>}
+      <p className={`text-2xl sm:text-3xl font-bold font-mono leading-none ${valueClass}`}>{value}</p>
+      {sub && <p className="text-[10px] sm:text-xs text-neutral-muted mt-1 sm:mt-2">{sub}</p>}
     </div>
   )
 }

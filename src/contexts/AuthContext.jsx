@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { ADMIN_EMAILS } from '../lib/config'
 
 const AuthContext = createContext({})
 
@@ -57,11 +58,14 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  const canEdit = !!user && ADMIN_EMAILS.includes(user.email?.toLowerCase())
+
   const value = {
     user,
     loading,
     error,
-    signOut
+    signOut,
+    canEdit,
   }
 
   return (

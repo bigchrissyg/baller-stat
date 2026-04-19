@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 import { usePlayer, usePlayerStats, useSeasons } from '../hooks/useData'
 import { calculatePlayerAggregateStats, updatePlayer, insertPlayerSeason, deletePlayerSeason } from '../lib/supabase'
 import { formatDate, getPositionColor, getMatchResult, getInitials } from '../lib/utils'
@@ -10,6 +11,7 @@ import PlayerStatsCharts from '../components/PlayerStatsCharts'
 export default function PlayerProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { canEdit } = useAuth()
   const { player, loading: playerLoading, refetch: refetchPlayer } = usePlayer(id)
   const { stats, loading: statsLoading, error } = usePlayerStats(id)
   const { seasons } = useSeasons()
@@ -110,17 +112,25 @@ export default function PlayerProfile() {
               {player.active ? 'Active - Available for matches' : 'Inactive - Hidden from dropdowns'}
             </p>
           </div>
-          <button
-            onClick={handleToggleActive}
-            disabled={saving}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
-              player.active
-                ? 'bg-green-100/50 text-green-700 hover:bg-green-100'
-                : 'bg-neutral-secondary text-neutral-muted hover:bg-neutral-secondary/70'
-            } disabled:opacity-50`}
-          >
-            {player.active ? 'Active' : 'Inactive'}
-          </button>
+          {canEdit ? (
+            <button
+              onClick={handleToggleActive}
+              disabled={saving}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${
+                player.active
+                  ? 'bg-green-100/50 text-green-700 hover:bg-green-100'
+                  : 'bg-neutral-secondary text-neutral-muted hover:bg-neutral-secondary/70'
+              } disabled:opacity-50`}
+            >
+              {player.active ? 'Active' : 'Inactive'}
+            </button>
+          ) : (
+            <span className={`px-3 py-1.5 rounded-lg text-sm font-semibold ${
+              player.active ? 'bg-green-100/50 text-green-700' : 'bg-neutral-secondary text-neutral-muted'
+            }`}>
+              {player.active ? 'Active' : 'Inactive'}
+            </span>
+          )}
         </div>
 
         {isManaging ? (
@@ -166,12 +176,14 @@ export default function PlayerProfile() {
                 <p className="text-xs text-neutral-muted mt-1">Not registered for any seasons</p>
               )}
             </div>
-            <button
-              onClick={() => setIsManaging(true)}
-              className="text-xs font-medium text-neutral-accent hover:text-neutral-accent/80 transition-colors"
-            >
-              Edit
-            </button>
+            {canEdit && (
+              <button
+                onClick={() => setIsManaging(true)}
+                className="text-xs font-medium text-neutral-accent hover:text-neutral-accent/80 transition-colors"
+              >
+                Edit
+              </button>
+            )}
           </div>
         )}
       </div>
