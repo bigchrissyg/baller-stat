@@ -132,20 +132,19 @@ export const useAllPlayersStats = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setData(await fetchAllPlayersStats())
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        setLoading(false)
-      }
+  const load = useCallback(async () => {
+    try {
+      setData(await fetchAllPlayersStats())
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-    load()
   }, [])
 
-  return { data, loading, error }
+  useEffect(() => { load() }, [load])
+
+  return { data, loading, error, refetch: load }
 }
 
 // ─── Seasons ─────────────────────────────────────────────────────────────────

@@ -123,9 +123,9 @@ export const getPositionGroup = (position) => {
 
 export const getMatchTypeColor = (type) => {
   const map = {
-    League:   'bg-indigo-100 text-indigo-700',
-    Cup:      'bg-purple-100 text-purple-700',
-    Friendly: 'bg-teal-100 text-teal-700',
+    League:   'bg-badge-league-bg text-badge-league-fg',
+    Cup:      'bg-badge-cup-bg text-badge-cup-fg',
+    Friendly: 'bg-badge-friendly-bg text-badge-friendly-fg',
     Training: 'bg-slate-100 text-slate-600',
   }
   return map[type] || 'bg-slate-100 text-slate-600'

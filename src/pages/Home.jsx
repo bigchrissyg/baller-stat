@@ -5,7 +5,7 @@ import { createMatch } from '../lib/supabase'
 import { formatDate, formatDateShort, getMatchResult, getMatchTypeColor, getPositionGroup } from '../lib/utils'
 import StatCard from '../components/ui/StatCard'
 import Spinner from '../components/ui/Spinner'
-import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, ReferenceLine } from 'recharts'
+import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 
 const MATCH_TYPES = ['All', 'League', 'Cup', 'Friendly']
 
@@ -132,7 +132,7 @@ function FixtureRow({ match }) {
   return (
     <button
       onClick={() => navigate(`/matches/${match.id}`)}
-      className="w-full text-left bg-neutral-card rounded-xl border border-neutral-border shadow-sm hover:shadow-md hover:border-neutral-accent/30 transition-all p-4 sm:p-5 flex items-center gap-4"
+      className="w-full text-left bg-neutral-surface shadow-card rounded-md hover:shadow-card-hover transition-shadow p-4 sm:p-5 flex items-center gap-4"
     >
       <div className="hidden sm:block w-16 text-center shrink-0">
         <p className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
@@ -147,7 +147,7 @@ function FixtureRow({ match }) {
         <div className="flex items-center gap-2 mb-1">
           <span className="sm:hidden text-xs text-neutral-muted">{formatDateShort(match.match_date)}</span>
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getMatchTypeColor(match.match_type)}`}>{match.match_type}</span>
-          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${match.location === 'H' ? 'bg-hornets-secondary/20 text-hornets-secondary' : 'bg-hornets-tertiary/20 text-hornets-tertiary'}`}>
+          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${match.location === 'H' ? 'bg-badge-home-bg text-badge-home-fg' : 'bg-badge-away-bg text-badge-away-fg'}`}>
             {match.location === 'H' ? 'Home' : 'Away'}
           </span>
         </div>
@@ -157,7 +157,7 @@ function FixtureRow({ match }) {
       <div className="shrink-0 text-right">
         {hasScore ? (
           <>
-            <p className="text-xl font-bold text-neutral-fg leading-none">{match.histon_score}–{match.opposition_score}</p>
+            <p className="text-xl font-bold font-mono text-neutral-fg leading-none">{match.histon_score}–{match.opposition_score}</p>
             <span className={`inline-block mt-1 text-xs font-bold px-2 py-0.5 rounded-full ${RESULT_PILL[result] || 'bg-neutral-secondary text-neutral-fg'}`}>{result}</span>
           </>
         ) : (
@@ -290,27 +290,49 @@ const COLS = [
   { key: 'cleanDEFPerGame','label': 'CS D/G', title: 'Clean quarters as DEF per game',     fmt: v => v > 0 ? fmtDec(v) : '—', heat: true, timingNeeded: true },
 ]
 
-// ─── Top Performer Card ──────────────────────────────────────────────────────
+// ─── Top Performers Table ───────────────────────────────────────────────────
 
-function TopPerformerCard({ player, stat, value, icon, color, suffix = '' }) {
+const PERFORMER_THEMES = {
+  navy:    { card: 'from-[#1E3A5F]/8 to-[#1E3A5F]/4 border-[#1E3A5F]/20',  iconBg: 'bg-[#1E3A5F]/10 text-[#1E3A5F]',    bar: 'bg-[#1E3A5F]' },
+  red:     { card: 'from-[#E8354A]/8 to-[#E8354A]/4 border-[#E8354A]/20',  iconBg: 'bg-[#E8354A]/10 text-[#E8354A]',    bar: 'bg-[#E8354A]' },
+  sky:     { card: 'from-[#0EA5E9]/8 to-[#0EA5E9]/4 border-[#0EA5E9]/20',  iconBg: 'bg-[#0EA5E9]/10 text-[#0EA5E9]',    bar: 'bg-[#0EA5E9]' },
+  emerald: { card: 'from-[#00D68F]/8 to-[#00D68F]/4 border-[#00D68F]/20',  iconBg: 'bg-[#00D68F]/10 text-[#059669]',    bar: 'bg-[#00D68F]' },
+  violet:  { card: 'from-[#6C3FC9]/8 to-[#6C3FC9]/4 border-[#6C3FC9]/20',  iconBg: 'bg-[#6C3FC9]/10 text-[#6C3FC9]',    bar: 'bg-[#6C3FC9]' },
+}
+
+const MEDALS = ['🥇', '🥈', '🥉']
+
+function TopPerformersTable({ title, data, icon, suffix = '', theme = 'sky' }) {
+  const t = PERFORMER_THEMES[theme] || PERFORMER_THEMES.sky
+  const max = data.length > 0 ? Math.max(...data.map(d => d.value)) : 1
+
   return (
-    <div className={`bg-gradient-to-br ${color} rounded-xl p-4 text-white relative overflow-hidden`}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className="text-lg">{icon}</span>
-          <span className="text-xs font-medium uppercase tracking-wide opacity-90">{stat}</span>
+    <div className={`bg-gradient-to-br ${t.card} border rounded-2xl p-4 flex flex-col gap-3`}>
+      <div className="flex items-center gap-2.5">
+        <div className={`w-9 h-9 rounded-xl ${t.iconBg} flex items-center justify-center text-base shrink-0`}>
+          {icon}
         </div>
-        <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full font-medium">
-          #{player.rank}
-        </span>
+        <h4 className="font-semibold text-neutral-fg text-sm leading-tight">{title}</h4>
       </div>
-      <div className="mb-1">
-        <h4 className="font-bold text-sm truncate">{player.name}</h4>
+      <div className="space-y-3">
+        {data.slice(0, 3).map((player, index) => {
+          const pct = max > 0 ? Math.round((player.value / max) * 100) : 0
+          return (
+            <div key={player.name} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-sm shrink-0 leading-none">{MEDALS[index]}</span>
+                  <span className="text-sm text-neutral-fg font-medium truncate">{player.name}</span>
+                </div>
+                <span className="text-sm font-bold font-mono text-neutral-fg shrink-0">{player.value}{suffix}</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-black/10 overflow-hidden">
+                <div className={`h-full rounded-full ${t.bar} transition-all duration-500`} style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          )
+        })}
       </div>
-      <div className="text-xl font-black">
-        {value}{suffix}
-      </div>
-      <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-white/10 rounded-full"></div>
     </div>
   )
 }
@@ -319,114 +341,67 @@ function TopPerformerCard({ player, stat, value, icon, color, suffix = '' }) {
 
 function StatsOverview({ rows }) {
   const hasTimingData = rows.some(r => r.hasGoalTiming)
-  const topMinutes = [...rows].sort((a, b) => b.totalMins - a.totalMins)[0]
-  const topGoals = [...rows].sort((a, b) => b.goalCount - a.goalCount)[0]
-  const topAssists = [...rows].sort((a, b) => b.assistCount - a.assistCount)[0]
-  const topAwards = [...rows].sort((a, b) => b.awardCount - a.awardCount)[0]
+  const topMinutes = [...rows].filter(p => p.matches > 0).sort((a, b) => (b.totalMins / b.matches) - (a.totalMins / a.matches)).slice(0, 3).map(p => ({ name: p.name, value: Math.round(p.totalMins / p.matches) }))
+  const topGoals = [...rows].filter(p => p.goalCount > 0).sort((a, b) => b.goalCount - a.goalCount).slice(0, 3).map(p => ({ name: p.name, value: p.goalCount }))
+  const topAssists = [...rows].filter(p => p.assistCount > 0).sort((a, b) => b.assistCount - a.assistCount).slice(0, 3).map(p => ({ name: p.name, value: p.assistCount }))
+  const topAwards = [...rows].filter(p => p.awardCount > 0).sort((a, b) => b.awardCount - a.awardCount).slice(0, 3).map(p => ({ name: p.name, value: p.awardCount }))
 
-  // Calculate clean quarters for defensive players (positions ending in B)
+  // Calculate clean quarters for defensive players
   const topCleanDefensive = [...rows]
     .map(row => ({
       ...row,
-      cleanDefensiveQuarters: row.cleanAsDEF // This already represents clean quarters as defender
+      cleanDefensiveQuarters: row.cleanAsDEF
     }))
     .filter(row => row.cleanDefensiveQuarters > 0)
-    .sort((a, b) => b.cleanDefensiveQuarters - a.cleanDefensiveQuarters)[0]
+    .sort((a, b) => b.cleanDefensiveQuarters - a.cleanDefensiveQuarters)
+    .slice(0, 3)
+    .map(p => ({ name: p.name, value: p.cleanDefensiveQuarters }))
+
+  const summaryCards = [
+    { label: 'Players',       value: rows.length,                                      icon: '👥', bg: 'bg-[#1E3A5F]',  ring: 'ring-[#1E3A5F]/20' },
+    { label: 'Appearances',   value: rows.reduce((s, r) => s + r.matches, 0),           icon: '📋', bg: 'bg-[#0EA5E9]',  ring: 'ring-[#0EA5E9]/20' },
+    { label: 'Goals Scored',  value: rows.reduce((s, r) => s + r.goalCount, 0),         icon: '⚽', bg: 'bg-[#E8354A]',  ring: 'ring-[#E8354A]/20' },
+    { label: 'Star Awards',   value: rows.reduce((s, r) => s + r.awardCount, 0),        icon: '⭐', bg: 'bg-[#00D68F]',  ring: 'ring-[#00D68F]/20' },
+  ]
 
   return (
     <div className="space-y-6">
-      {/* Top Performers Grid */}
-      <div>
-        <h3 className="text-sm font-semibold text-neutral-fg mb-4">Top Performers</h3>
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {topMinutes && (
-            <TopPerformerCard
-              player={{ name: topMinutes.name, rank: 1 }}
-              stat="Minutes"
-              value={Math.round(topMinutes.totalMins)}
-              icon="⏱️"
-              color="from-blue-500 to-blue-600"
-              suffix="'"
-            />
-          )}
-          {topGoals && topGoals.goalCount > 0 && (
-            <TopPerformerCard
-              player={{ name: topGoals.name, rank: 1 }}
-              stat="Goals"
-              value={topGoals.goalCount}
-              icon="⚽"
-              color="from-green-500 to-green-600"
-            />
-          )}
-          {topAssists && topAssists.assistCount > 0 && (
-            <TopPerformerCard
-              player={{ name: topAssists.name, rank: 1 }}
-              stat="Assists"
-              value={topAssists.assistCount}
-              icon="🎯"
-              color="from-purple-500 to-purple-600"
-            />
-          )}
-          {topAwards && topAwards.awardCount > 0 && (
-            <TopPerformerCard
-              player={{ name: topAwards.name, rank: 1 }}
-              stat="Star Player"
-              value={topAwards.awardCount}
-              icon="⭐"
-              color="from-yellow-500 to-yellow-600"
-            />
-          )}
-          {topCleanDefensive ? (
-            <TopPerformerCard
-              player={{ name: topCleanDefensive.name, rank: 1 }}
-              stat="Clean Quarters"
-              value={topCleanDefensive.cleanDefensiveQuarters}
-              icon="🛡️"
-              color="from-red-500 to-red-600"
-            />
-          ) : hasTimingData ? null : (
-            <div className="bg-neutral-card border border-neutral-border rounded-lg p-4 text-center">
-              <div className="text-2xl mb-2">🛡️</div>
-              <div className="text-sm font-semibold text-neutral-fg mb-1">Clean Quarters</div>
-              <div className="text-xs text-neutral-fg/60">Requires goal timing data</div>
-            </div>
-          )}
-        </div>
+      {/* Team Summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {summaryCards.map(({ label, value, icon, bg, ring }) => (
+          <div key={label} className={`${bg} ring-4 ${ring} rounded-2xl p-5 text-white shadow-card-md flex flex-col gap-2`}>
+            <span className="text-2xl leading-none">{icon}</span>
+            <div className="text-3xl font-bold font-mono leading-none">{value}</div>
+            <div className="text-xs font-semibold uppercase tracking-widest text-white/70">{label}</div>
+          </div>
+        ))}
       </div>
 
-      {/* Team Summary */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-neutral-accent mb-1">
-            {rows.length}
-          </div>
-          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
-            Total Players
-          </div>
-        </div>
-        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-hornets-secondary mb-1">
-            {rows.reduce((sum, r) => sum + r.matches, 0)}
-          </div>
-          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
-            Total Appearances
-          </div>
-        </div>
-        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-hornets-tertiary mb-1">
-            {rows.reduce((sum, r) => sum + r.goalCount, 0)}
-          </div>
-          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
-            Total Goals
-          </div>
-        </div>
-        <div className="bg-neutral-secondary/50 rounded-xl p-4 text-center">
-          <div className="text-2xl font-bold text-hornets-quaternary mb-1">
-            {rows.reduce((sum, r) => sum + r.awardCount, 0)}
-          </div>
-          <div className="text-xs text-neutral-muted font-medium uppercase tracking-wide">
-            Star Awards
-          </div>
+      {/* Top Performers */}
+      <div>
+        <h3 className="text-sm font-semibold uppercase tracking-widest text-neutral-muted mb-3">Top Performers</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          {topMinutes.length > 0 && (
+            <TopPerformersTable title="Avg Minutes" data={topMinutes} icon="⏱️" theme="navy" suffix="'" />
+          )}
+          {topGoals.length > 0 && (
+            <TopPerformersTable title="Goals" data={topGoals} icon="⚽" theme="red" />
+          )}
+          {topAssists.length > 0 && (
+            <TopPerformersTable title="Assists" data={topAssists} icon="🎯" theme="sky" />
+          )}
+          {topAwards.length > 0 && (
+            <TopPerformersTable title="Star Awards" data={topAwards} icon="⭐" theme="emerald" />
+          )}
+          {topCleanDefensive.length > 0 ? (
+            <TopPerformersTable title="Clean Quarters" data={topCleanDefensive} icon="🛡️" theme="violet" />
+          ) : !hasTimingData ? (
+            <div className="bg-gradient-to-br from-[#6C3FC9]/8 to-[#6C3FC9]/4 border border-[#6C3FC9]/20 rounded-2xl p-4 flex flex-col items-center justify-center gap-2 text-center min-h-[140px]">
+              <div className="w-9 h-9 rounded-xl bg-[#6C3FC9]/10 flex items-center justify-center text-base">🛡️</div>
+              <div className="text-sm font-semibold text-neutral-fg">Clean Quarters</div>
+              <div className="text-xs text-neutral-muted leading-snug">Requires goal timing data</div>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
@@ -454,14 +429,16 @@ function CompactStatsTable({ rows, columns, title, hasTimingData }) {
   }
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-semibold text-neutral-fg">{title}</h3>
-      <div className="bg-neutral-card rounded-xl border border-neutral-border overflow-hidden">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold uppercase tracking-widest text-neutral-muted">{title}</h3>
+      </div>
+      <div className="rounded-xl border border-neutral-border overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
-              <tr className="bg-neutral-secondary/50 border-b border-neutral-border">
-                <th className="sticky left-0 bg-neutral-secondary/50 z-10 text-left px-4 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[140px]">
+              <tr className="bg-neutral-bg border-b border-neutral-border">
+                <th className="sticky left-0 bg-neutral-bg z-10 text-left px-4 py-3 text-xs font-bold uppercase tracking-widest text-neutral-muted whitespace-nowrap min-w-[140px]">
                   Player
                 </th>
                 {columns.map(col => (
@@ -469,33 +446,39 @@ function CompactStatsTable({ rows, columns, title, hasTimingData }) {
                     key={col.key}
                     title={col.title}
                     onClick={() => toggleSort(col.key)}
-                    className={`px-3 py-3 text-center font-semibold uppercase tracking-wide whitespace-nowrap cursor-pointer select-none transition-colors ${
+                    className={`px-3 py-3 text-center text-xs font-bold uppercase tracking-widest whitespace-nowrap cursor-pointer select-none transition-all ${
                       sortKey === col.key
-                        ? 'text-neutral-accent bg-neutral-accent/10'
-                        : 'text-neutral-muted hover:text-neutral-fg'
+                        ? 'text-[#0EA5E9] bg-[#0EA5E9]/8'
+                        : 'text-neutral-muted hover:text-neutral-fg hover:bg-neutral-secondary/30'
                     } ${col.timingNeeded && !hasTimingData ? 'opacity-40' : ''}`}
                   >
-                    {col.label}
-                    {sortKey === col.key && (
-                      <span className="ml-0.5 text-[10px]">{sortDir === -1 ? '↓' : '↑'}</span>
-                    )}
+                    <span className="inline-flex items-center gap-1">
+                      {col.label}
+                      {sortKey === col.key
+                        ? <span className="text-[10px] font-black">{sortDir === -1 ? '↓' : '↑'}</span>
+                        : <span className="text-[10px] opacity-30">↕</span>
+                      }
+                    </span>
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-border/50">
-              {sorted.map((row) => (
-                <tr key={row.id} className="hover:bg-neutral-secondary/30 transition-colors group">
-                  <td className="sticky left-0 bg-neutral-card group-hover:bg-neutral-secondary/30 transition-colors z-10 px-4 py-3 font-semibold text-neutral-fg whitespace-nowrap">
-                    <a href={`/players/${row.id}`} className="hover:text-neutral-accent transition-colors">{row.name}</a>
+            <tbody className="divide-y divide-neutral-border/50 bg-white">
+              {sorted.map((row, i) => (
+                <tr key={row.id} className={`hover:bg-[#0EA5E9]/4 transition-colors group ${i % 2 === 1 ? 'bg-neutral-bg/40' : ''}`}>
+                  <td className={`sticky left-0 z-10 px-4 py-3 font-semibold text-neutral-fg whitespace-nowrap transition-colors group-hover:bg-[#0EA5E9]/4 ${i % 2 === 1 ? 'bg-neutral-bg/40' : 'bg-white'}`}>
+                    <a href={`/players/${row.id}`} className="hover:text-[#0EA5E9] transition-colors">{row.name}</a>
                   </td>
                   {columns.map(col => {
                     const val = row[col.key]
                     const isTimingCol = col.timingNeeded && !hasTimingData
+                    const isActiveSort = col.key === sortKey
                     return (
                       <td
                         key={col.key}
-                        className={`px-3 py-3 text-center tabular-nums text-neutral-fg/80 whitespace-nowrap ${isTimingCol ? 'opacity-30' : ''}`}
+                        className={`px-3 py-3 text-center tabular-nums whitespace-nowrap transition-colors ${
+                          isTimingCol ? 'opacity-30' : ''
+                        } ${isActiveSort ? 'text-neutral-fg font-semibold bg-[#0EA5E9]/5' : 'text-neutral-fg/75'}`}
                       >
                         {col.fmt(val)}
                       </td>
@@ -556,32 +539,46 @@ function PlayerStatsTable({ data }) {
     { key: 'cleanDEFPerGame', label: 'CS DEF/Match', title: 'Clean quarters as DEF per game', fmt: v => v > 0 ? fmtDec(v, 2) : '—', timingNeeded: true },
   ]
 
+  const tabTheme = {
+    'overview':     { active: 'bg-[#1E3A5F] text-white shadow-sm', dot: 'bg-[#1E3A5F]' },
+    'playing-time': { active: 'bg-[#0EA5E9] text-white shadow-sm', dot: 'bg-[#0EA5E9]' },
+    'attacking':    { active: 'bg-[#E8354A] text-white shadow-sm', dot: 'bg-[#E8354A]' },
+    'defensive':    { active: 'bg-[#6C3FC9] text-white shadow-sm', dot: 'bg-[#6C3FC9]' },
+  }
+
   return (
-    <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm overflow-hidden">
-      <div className="px-5 sm:px-6 py-4 border-b border-neutral-border flex items-center justify-between">
-        <h2 className="text-base font-bold text-neutral-fg">Player Statistics</h2>
+    <div className="rounded-2xl border border-neutral-border shadow-card-md overflow-hidden bg-neutral-surface">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#1E3A5F] to-[#1E3A5F]/85 px-5 sm:px-6 py-5 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Player Statistics</h2>
+          <p className="text-xs text-white/50 mt-0.5 font-medium uppercase tracking-widest">Season Performance</p>
+        </div>
         {!hasTimingData && (
-          <span className="text-xs text-neutral-muted">CS columns require goal timing data</span>
+          <span className="text-xs text-white/50 bg-white/10 rounded-lg px-3 py-1.5">CS requires goal timing</span>
         )}
       </div>
 
       {/* Tab Navigation */}
-      <div className="px-5 sm:px-6 py-3 border-b border-neutral-border">
+      <div className="px-5 sm:px-6 py-3 border-b border-neutral-border bg-neutral-bg/50">
         <div className="flex gap-1 overflow-x-auto">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'bg-neutral-accent text-neutral-bg shadow-sm'
-                  : 'text-neutral-muted hover:text-neutral-fg hover:bg-neutral-secondary'
-              }`}
-            >
-              <span>{tab.icon}</span>
-              <span>{tab.label}</span>
-            </button>
-          ))}
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id
+            const theme = tabTheme[tab.id]
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${
+                  isActive ? theme.active : 'text-neutral-muted hover:text-neutral-fg hover:bg-neutral-secondary/50'
+                }`}
+              >
+                {!isActive && <span className={`w-2 h-2 rounded-full ${theme.dot} opacity-60`} />}
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -617,6 +614,135 @@ function PlayerStatsTable({ data }) {
             hasTimingData={hasTimingData}
           />
         )}
+      </div>
+    </div>
+  )
+}
+
+// ─── Season Form Trend ───────────────────────────────────────────────────────
+
+const RESULT_COLOR = { W: '#00D68F', D: '#94A3B8', L: '#E8354A' }
+const RESULT_LABEL = { W: 'Win', D: 'Draw', L: 'Loss' }
+
+function FormTrendChart({ played }) {
+  if (played.length < 2) return null
+
+  const chartData = [...played].reverse().map((m) => ({
+    diff: m.histon_score - m.opposition_score,
+    for: m.histon_score,
+    against: m.opposition_score,
+    result: m.histon_score > m.opposition_score ? 'W' : m.histon_score < m.opposition_score ? 'L' : 'D',
+    opposition: m.opposition,
+    date: new Date(m.match_date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
+  }))
+
+  const wins   = chartData.filter(d => d.result === 'W').length
+  const draws  = chartData.filter(d => d.result === 'D').length
+  const losses = chartData.filter(d => d.result === 'L').length
+
+  const FormDot = ({ cx, cy, payload }) => (
+    <circle cx={cx} cy={cy} r={6} fill={RESULT_COLOR[payload.result]} stroke="white" strokeWidth={2.5} />
+  )
+
+  const FormTooltip = ({ active, payload }) => {
+    if (!active || !payload?.length) return null
+    const d = payload[0].payload
+    const color = RESULT_COLOR[d.result]
+    return (
+      <div style={{ backgroundColor: '#0F172A' }} className="border border-white/10 rounded-xl px-4 py-3 shadow-2xl min-w-[170px]">
+        <p className="text-white/50 text-xs mb-1 font-medium tracking-wide">{d.date}</p>
+        <p className="text-white font-semibold text-sm mb-2.5">vs {d.opposition}</p>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-white font-bold font-mono text-xl leading-none">{d.for}–{d.against}</span>
+          <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ color, backgroundColor: `${color}30` }}>
+            {RESULT_LABEL[d.result]}
+          </span>
+        </div>
+        <p className="text-white/35 text-xs mt-2">GD {d.diff >= 0 ? `+${d.diff}` : d.diff}</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-neutral-surface rounded-2xl border border-neutral-border shadow-card-md overflow-hidden">
+      {/* Card header */}
+      <div className="px-5 sm:px-6 pt-5 pb-0 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 className="text-2xl font-semibold tracking-tight text-neutral-fg">Season Form</h2>
+          <p className="text-xs text-neutral-muted mt-0.5">{chartData.length} matches · goal difference trend</p>
+        </div>
+        <div className="flex items-center gap-2 pt-1">
+          {[
+            { count: wins,   color: '#00D68F', textColor: '#059669', label: 'W' },
+            { count: draws,  color: '#94A3B8', textColor: '#64748B', label: 'D' },
+            { count: losses, color: '#E8354A', textColor: '#E8354A', label: 'L' },
+          ].map(({ count, color, textColor, label }) => (
+            <span key={label}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ backgroundColor: `${color}18`, color: textColor }}
+            >
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+              {count}{label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Area chart */}
+      <div className="px-2 pb-0 pt-2">
+        <ResponsiveContainer width="100%" height={240}>
+          <AreaChart data={chartData} margin={{ top: 16, right: 24, bottom: 48, left: 10 }}>
+            <defs>
+              <linearGradient id="formGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%"   stopColor="#0EA5E9" stopOpacity={0.18} />
+                <stop offset="100%" stopColor="#0EA5E9" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#E2E8F2" vertical={false} strokeDasharray="0" />
+            <ReferenceLine y={0} stroke="#CBD5E1" strokeWidth={1.5} strokeDasharray="5 4" />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: '#94A3B8', fontSize: 11, fontWeight: 500 }}
+              angle={-40}
+              textAnchor="end"
+              height={55}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              tick={{ fill: '#94A3B8', fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              width={32}
+              tickFormatter={v => v > 0 ? `+${v}` : `${v}`}
+            />
+            <Tooltip content={<FormTooltip />} cursor={{ stroke: '#CBD5E1', strokeWidth: 1 }} />
+            <Area
+              type="monotone"
+              dataKey="diff"
+              stroke="#0EA5E9"
+              strokeWidth={2.5}
+              fill="url(#formGradient)"
+              dot={<FormDot />}
+              activeDot={{ r: 8, stroke: 'white', strokeWidth: 2.5, fill: '#0EA5E9' }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Per-match result strip */}
+      <div className="px-5 sm:px-6 pb-5 pt-1 flex items-center gap-1.5 flex-wrap border-t border-neutral-border/60 mt-2">
+        <span className="text-xs text-neutral-muted font-medium mr-1 uppercase tracking-widest">Results</span>
+        {chartData.map((d, i) => (
+          <div
+            key={i}
+            title={`${d.date} vs ${d.opposition}: ${d.for}–${d.against}`}
+            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white cursor-default transition-transform hover:scale-125 select-none"
+            style={{ backgroundColor: RESULT_COLOR[d.result] }}
+          >
+            {d.result}
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -681,10 +807,17 @@ export default function Home() {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 space-y-8">
 
+      {/* ── Season Form Trend ── */}
+      {played.length > 1 && (
+        <section>
+          <FormTrendChart played={played} />
+        </section>
+      )}
+
       {/* ── Season at a Glance ── */}
       <section>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-neutral-fg">Season at a Glance</h2>
+          <h2 className="text-2xl font-semibold tracking-tight text-neutral-fg">Season at a Glance</h2>
           {recentForm.length > 0 && (
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-neutral-muted mr-1">Form</span>
@@ -711,18 +844,18 @@ export default function Home() {
       {/* ── Fixtures ── */}
       <section>
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-          <div className="flex items-center gap-1 bg-neutral-card border border-neutral-border rounded-xl p-1 shadow-sm">
+          <div className="flex items-center gap-1 bg-neutral-surface shadow-card rounded-lg p-1">
             {MATCH_TYPES.map(t => (
               <button key={t} onClick={() => setFilter(t)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  filter === t ? 'bg-neutral-accent text-neutral-bg shadow-sm' : 'text-neutral-muted hover:text-neutral-fg'
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                  filter === t ? 'bg-neutral-accent text-white' : 'text-neutral-secondary hover:text-neutral-fg'
                 }`}
               >{t}</button>
             ))}
           </div>
           <button
             onClick={() => setShowModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-semibold rounded-xl transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-white text-sm font-semibold rounded-lg transition-colors shadow-btn"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -747,7 +880,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Results Distribution */}
             <div className="bg-gradient-to-br from-result-win/5 to-result-loss/5 rounded-2xl border border-neutral-border shadow-sm p-6">
-              <h3 className="text-base font-bold text-neutral-fg mb-6">Results Distribution</h3>
+              <h3 className="text-2xl font-semibold tracking-tight text-neutral-fg mb-6">Results Distribution</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
@@ -783,7 +916,7 @@ export default function Home() {
 
             {/* Goals Comparison */}
             <div className="bg-gradient-to-br from-hornets-secondary/5 to-hornets-tertiary/5 rounded-2xl border border-neutral-border shadow-sm p-6">
-              <h3 className="text-base font-bold text-neutral-fg mb-6">Goals & Defence Analysis</h3>
+              <h3 className="text-2xl font-semibold tracking-tight text-neutral-fg mb-6">Goals & Defence Analysis</h3>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={[
                   { category: 'Goals For', value: gf, fill: '#06b6d4' },
@@ -823,69 +956,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Match Timeline */}
-            {played.length > 1 && (
-              <div className="lg:col-span-2 bg-gradient-to-br from-neutral-accent/5 to-hornets-primary/5 rounded-2xl border border-neutral-border shadow-sm p-6">
-                <h3 className="text-base font-bold text-neutral-fg mb-6">Season Form Trend</h3>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={[...played].reverse().map((m, i) => {
-                    const { result } = getMatchResult(m.histon_score, m.opposition_score)
-                    return {
-                      match: i + 1,
-                      score: m.histon_score - m.opposition_score,
-                      for: m.histon_score,
-                      against: m.opposition_score,
-                      result,
-                      date: new Date(m.match_date).toLocaleDateString('en-GB', { month: 'short', day: 'numeric' }),
-                    }
-                  })}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#cbd5e1" />
-                    <XAxis dataKey="date" stroke="#64748b" angle={-45} textAnchor="end" height={80} />
-                    <YAxis stroke="#64748b" label={{ value: 'Goal Difference', angle: -90, position: 'insideLeft' }} />
-                    <ReferenceLine y={0} stroke="#64748b" strokeWidth={2} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: '#111827',
-                        border: '1px solid #cbd5e1',
-                        borderRadius: '8px',
-                        color: '#f8fafc'
-                      }}
-                      formatter={(value, name) => {
-                        if (name === 'score') return [value, 'Goal Diff']
-                        return [value, name]
-                      }}
-                    />
-                    <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="#06b6d4"
-                      strokeWidth={3}
-                      dot={(props) => {
-                        const { cx, cy, payload } = props
-                        const color = payload.result === 'W' ? '#10b981' : payload.result === 'L' ? '#ef4444' : '#6b7280'
-                        return (
-                          <circle cx={cx} cy={cy} r={5} fill={color} stroke="white" strokeWidth={2} />
-                        )
-                      }}
-                      activeDot={{ r: 7 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-                <p className="text-xs text-neutral-muted mt-4">
-                  <span className="inline-flex items-center gap-2 mr-4">
-                    <span className="w-3 h-3 rounded-full bg-result-win" /> Win
-                  </span>
-                  <span className="inline-flex items-center gap-2 mr-4">
-                    <span className="w-3 h-3 rounded-full bg-result-draw" /> Draw
-                  </span>
-                  <span className="inline-flex items-center gap-2 mr-4">
-                    <span className="w-3 h-3 rounded-full bg-result-loss" /> Loss
-                  </span>
-
-                </p>
-              </div>
-            )}
           </div>
         </section>
       )}
