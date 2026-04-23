@@ -84,7 +84,7 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
     if (disabled) return
     if (open) { setOpen(false); return }
     const rect = triggerRef.current.getBoundingClientRect()
-    const menuWidth = 184
+    const menuWidth = 200
     const left = rect.left + menuWidth > window.innerWidth ? rect.right - menuWidth : rect.left
     setMenuStyle({ position: 'fixed', top: rect.bottom + 4, left, width: menuWidth, zIndex: 9999 })
     setOpen(true)
@@ -102,10 +102,10 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
         setOpen(false)
     }
     const onScroll = () => setOpen(false)
-    document.addEventListener('mousedown', onDown)
+    document.addEventListener('pointerdown', onDown)
     document.addEventListener('scroll', onScroll, true)
     return () => {
-      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('pointerdown', onDown)
       document.removeEventListener('scroll', onScroll, true)
     }
   }, [open])
@@ -117,30 +117,30 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
         type="button"
         onClick={openMenu}
         disabled={disabled}
-        className={`w-14 h-6 rounded text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center ${
+        className={`w-14 h-11 sm:h-8 rounded text-xs font-bold transition-all disabled:opacity-40 flex items-center justify-center ${
           value ? solidStyles.solid : 'text-neutral-muted border border-dashed border-neutral-border'
         }`}
       >
-        {value || ''}
+        {value || <span className="text-[10px]">+pos</span>}
       </button>
 
       {open && createPortal(
-        <div ref={menuRef} style={menuStyle} className="bg-neutral-card rounded-xl border border-neutral-border shadow-xl p-2 space-y-1.5">
+        <div ref={menuRef} style={menuStyle} className="bg-neutral-card rounded-xl border border-neutral-border shadow-xl p-2.5 space-y-2">
           <button
-            onMouseDown={() => select('')}
-            className="w-full text-left text-xs text-neutral-muted hover:text-neutral-fg px-2 py-0.5 rounded hover:bg-neutral-secondary"
+            onPointerDown={() => select('')}
+            className="w-full text-left text-xs text-neutral-muted hover:text-neutral-fg px-2 py-2 sm:py-0.5 rounded hover:bg-neutral-secondary"
           >
             — Remove
           </button>
           {POS_GROUPS.map(group => (
             <div key={group.label}>
-              <div className="text-[9px] font-bold uppercase tracking-widest text-neutral-muted px-1 mb-0.5">{group.label}</div>
-              <div className="flex flex-wrap gap-1">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-neutral-muted px-1 mb-1">{group.label}</div>
+              <div className="flex flex-wrap gap-1.5">
                 {group.positions.map(p => (
                   <button
                     key={p}
-                    onMouseDown={() => select(p)}
-                    className={`${getPOS_STYLES(p).solid} text-xs font-bold rounded px-2 py-0.5 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-neutral-muted' : ''}`}
+                    onPointerDown={() => select(p)}
+                    className={`${getPOS_STYLES(p).solid} text-xs font-bold rounded px-3 py-2 sm:px-2 sm:py-1 hover:opacity-80 transition-opacity ${value === p ? 'ring-2 ring-offset-1 ring-neutral-muted' : ''}`}
                   >
                     {p}
                   </button>
@@ -594,11 +594,11 @@ function LineupMatrix({ match, editMode, onRefetch }) {
       ) : (
       <div className="space-y-5">
       {/* Matrix */}
-      <div className="overflow-x-auto -mx-5 sm:mx-0">
+      <div className="overflow-x-auto overscroll-x-contain">
         <table className="min-w-full text-sm border-collapse">
           <thead>
             <tr>
-              <th className="sticky left-0 bg-neutral-card pl-5 sm:pl-0 pr-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[140px]">
+              <th className="sticky left-0 z-10 bg-neutral-card pl-0 pr-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-muted whitespace-nowrap min-w-[140px]">
                 Player
               </th>
               {segments.map(seg => (
@@ -624,8 +624,8 @@ function LineupMatrix({ match, editMode, onRefetch }) {
             {matrixPlayers.map(player => {
               const totalMins = getPlayerTotalMins(player.id)
               return (
-                <tr key={player.id} className="hover:bg-neutral-secondary/50">
-                  <td className="sticky left-0 bg-inherit pl-5 sm:pl-0 pr-3 py-2">
+                <tr key={player.id} className="group hover:bg-neutral-secondary/50">
+                  <td className="sticky left-0 z-10 bg-neutral-card group-hover:bg-neutral-secondary/50 transition-colors pl-0 pr-3 py-2">
                     <div className="flex items-center justify-between gap-2">
                       <Link
                         to={`/players/${player.id}`}
@@ -641,7 +641,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
                           <button
                             onClick={() => handleRemovePlayer(player.id)}
                             disabled={busy}
-                            className="text-neutral-muted/70 hover:text-hornets-tertiary transition-colors disabled:opacity-40 leading-none"
+                            className="w-9 h-9 flex items-center justify-center rounded-lg text-neutral-muted/70 hover:text-hornets-tertiary hover:bg-red-50 transition-colors disabled:opacity-40"
                             title="Remove player"
                           >✕</button>
                         )}
@@ -935,66 +935,78 @@ function GoalsSection({ match, editMode, onRefetch }) {
       {editMode && (
         <form onSubmit={handleAdd} className="bg-neutral-secondary/50 border border-neutral-border rounded-xl p-4 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-neutral-muted/80">Log Goal</p>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {/* For / Against radio buttons */}
-            <div className="col-span-2 sm:col-span-3 flex gap-4">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="goal_type"
-                  value="for"
-                  checked={form.for_histon}
-                  onChange={() => setForm(f => ({ ...f, for_histon: true }))}
-                  className="accent-neutral-accent"
-                />
-                <span className="text-neutral-fg">For</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="goal_type"
-                  value="against"
-                  checked={!form.for_histon}
-                  onChange={() => setForm(f => ({ ...f, for_histon: false, assist_player_id: '' }))}
-                  className="accent-neutral-accent"
-                />
-                <span className="text-neutral-fg">Against</span>
-              </label>
-            </div>
-            
-            {/* Scorer (required for "For", optional for "Against") */}
-            <select
-              className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
-              value={form.scorer_player_id}
-              onChange={e => setForm(f => ({ ...f, scorer_player_id: e.target.value }))}
-              required={form.for_histon}
+
+          {/* For / Against — large touch toggle */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setForm(f => ({ ...f, for_histon: true }))}
+              className={`py-3 rounded-xl text-sm font-bold transition-colors ${
+                form.for_histon
+                  ? 'bg-neutral-accent text-white shadow-sm'
+                  : 'bg-neutral-card border border-neutral-border text-neutral-muted'
+              }`}
             >
-              <option value="">{form.for_histon ? 'Scorer…' : 'Scorer (optional)…'}</option>
-              {eligiblePlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+              ⚽ For Us
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm(f => ({ ...f, for_histon: false, assist_player_id: '' }))}
+              className={`py-3 rounded-xl text-sm font-bold transition-colors ${
+                !form.for_histon
+                  ? 'bg-[#E8354A] text-white shadow-sm'
+                  : 'bg-neutral-card border border-neutral-border text-neutral-muted'
+              }`}
+            >
+              ⚽ Against
+            </button>
+          </div>
+
+          {/* Timing — pill buttons */}
+          <div className="grid grid-cols-4 gap-1.5">
+            {GOAL_TIMINGS.map(t => (
+              <button
+                key={t.value}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, timing: t.value }))}
+                className={`py-2.5 rounded-lg text-xs font-bold transition-colors ${
+                  form.timing === t.value
+                    ? 'bg-neutral-accent text-white shadow-sm'
+                    : 'bg-neutral-card border border-neutral-border text-neutral-muted'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Scorer / Assist — taller selects */}
+          <select
+            className="w-full border border-neutral-border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent bg-neutral-card"
+            value={form.scorer_player_id}
+            onChange={e => setForm(f => ({ ...f, scorer_player_id: e.target.value }))}
+            required={form.for_histon}
+          >
+            <option value="">{form.for_histon ? 'Scorer…' : 'Scorer (optional)…'}</option>
+            {eligiblePlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {form.for_histon && (
             <select
-              className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent"
+              className="w-full border border-neutral-border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent bg-neutral-card"
               value={form.assist_player_id}
               onChange={e => setForm(f => ({ ...f, assist_player_id: e.target.value }))}
-              disabled={!form.for_histon}
             >
               <option value="">Assist (optional)…</option>
               {eligiblePlayers.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
-            <select
-              className="border border-neutral-border rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-accent col-span-2 sm:col-span-3"
-              value={form.timing}
-              onChange={e => setForm(f => ({ ...f, timing: e.target.value }))}
-            >
-              {GOAL_TIMINGS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-            <button
-              type="submit" disabled={saving}
-              className="col-span-2 sm:col-span-3 bg-neutral-accent/100 hover:bg-neutral-accent text-white text-sm font-semibold rounded-lg px-4 py-1.5 transition-colors disabled:opacity-50"
-            >
-              {saving ? '…' : '+ Log Goal'}
-            </button>
-          </div>
+          )}
+
+          <button
+            type="submit" disabled={saving}
+            className="w-full bg-neutral-accent hover:bg-neutral-accent/90 text-white text-sm font-bold rounded-xl py-3.5 transition-colors disabled:opacity-50"
+          >
+            {saving ? '…' : '+ Log Goal'}
+          </button>
           {err && <p className="text-xs text-hornets-tertiary">{err}</p>}
         </form>
       )}
@@ -1095,8 +1107,8 @@ export default function MatchDetail() {
   useEffect(() => {
     if (match) {
       setScores({
-        histon: match.histon_score !== null ? String(match.histon_score) : '',
-        opposition: match.opposition_score !== null ? String(match.opposition_score) : '',
+        histon: match.histon_score !== null ? String(match.histon_score) : '0',
+        opposition: match.opposition_score !== null ? String(match.opposition_score) : '0',
       })
       setSeasonId(match.season_id || '')
     }
@@ -1112,12 +1124,6 @@ export default function MatchDetail() {
   }
 
   const handleScoreChange = async () => {
-    // Validate both scores are provided
-    if (scores.histon === '' || scores.opposition === '') {
-      alert('Please enter both scores')
-      return
-    }
-    
     setSavingScore(true)
     try {
       await updateMatch(id, {
@@ -1255,30 +1261,32 @@ export default function MatchDetail() {
           {hasResult && (
             <div className="text-right shrink-0">
               {editMode ? (
-                <div className="flex items-center gap-2 justify-end">
-                  <input
-                    type="number"
-                    min="0"
-                    disabled={savingScore}
-                    value={scores.histon}
-                    onChange={e => setScores(s => ({ ...s, histon: e.target.value }))}
-                    className="w-16 text-3xl font-black text-center bg-neutral-card/20 border border-white/30 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-neutral-accent"
-                  />
-                  <span className="text-neutral-muted/80 text-3xl mx-1">–</span>
-                  <input
-                    type="number"
-                    min="0"
-                    disabled={savingScore}
-                    value={scores.opposition}
-                    onChange={e => setScores(s => ({ ...s, opposition: e.target.value }))}
-                    className="w-16 text-3xl font-black text-center bg-neutral-card/20 border border-white/30 rounded-lg px-2 py-1 text-white focus:outline-none focus:ring-2 focus:ring-neutral-accent"
-                  />
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    {/* Our score stepper */}
+                    <div className="flex items-center gap-1">
+                      <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, histon: String(Math.max(0, Number(s.histon) - 1)) }))}
+                        className="w-9 h-9 rounded-lg bg-white/10 text-white text-lg font-bold hover:bg-white/20 transition-colors disabled:opacity-40 flex items-center justify-center">−</button>
+                      <span className="w-10 text-3xl font-black text-white text-center tabular-nums">{scores.histon !== '' ? scores.histon : '–'}</span>
+                      <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, histon: String(Number(s.histon || 0) + 1) }))}
+                        className="w-9 h-9 rounded-lg bg-white/10 text-white text-lg font-bold hover:bg-white/20 transition-colors disabled:opacity-40 flex items-center justify-center">+</button>
+                    </div>
+                    <span className="text-neutral-muted/80 text-3xl">–</span>
+                    {/* Opposition score stepper */}
+                    <div className="flex items-center gap-1">
+                      <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, opposition: String(Math.max(0, Number(s.opposition) - 1)) }))}
+                        className="w-9 h-9 rounded-lg bg-white/10 text-white text-lg font-bold hover:bg-white/20 transition-colors disabled:opacity-40 flex items-center justify-center">−</button>
+                      <span className="w-10 text-3xl font-black text-white text-center tabular-nums">{scores.opposition !== '' ? scores.opposition : '–'}</span>
+                      <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, opposition: String(Number(s.opposition || 0) + 1) }))}
+                        className="w-9 h-9 rounded-lg bg-white/10 text-white text-lg font-bold hover:bg-white/20 transition-colors disabled:opacity-40 flex items-center justify-center">+</button>
+                    </div>
+                  </div>
                   <button
                     onClick={handleScoreChange}
                     disabled={savingScore || scores.histon === '' || scores.opposition === ''}
-                    className="ml-2 px-3 py-1 bg-neutral-accent text-neutral-bg text-sm font-semibold rounded-lg hover:bg-neutral-accent/90 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-neutral-accent text-neutral-bg text-sm font-semibold rounded-lg hover:bg-neutral-accent/90 transition-colors disabled:opacity-50"
                   >
-                    {savingScore ? 'Saving…' : '✓ Save'}
+                    {savingScore ? 'Saving…' : '✓ Save Score'}
                   </button>
                 </div>
               ) : (
@@ -1299,41 +1307,39 @@ export default function MatchDetail() {
       {/* ── Score input for upcoming matches in edit mode ── */}
       {!hasResult && editMode && (
         <div className="bg-neutral-secondary/50 border border-neutral-border rounded-2xl p-5 sm:p-6">
-          <h3 className="text-base font-bold text-neutral-fg mb-4">Add Match Score</h3>
-          <div className="flex items-end gap-3">
-            <div className="flex-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-2">Our Score</label>
-              <input
-                type="number"
-                min="0"
-                disabled={savingScore}
-                value={scores.histon}
-                onChange={e => setScores(s => ({ ...s, histon: e.target.value }))}
-                placeholder="0"
-                className="w-full text-2xl font-black text-center bg-neutral-card border border-neutral-border rounded-lg px-3 py-2 text-neutral-fg focus:outline-none focus:ring-2 focus:ring-neutral-accent"
-              />
+          <h3 className="text-base font-bold text-neutral-fg mb-5">Add Match Score</h3>
+          <div className="flex items-center justify-center gap-6 mb-5">
+            {/* Our score stepper */}
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-muted">Our Score</span>
+              <div className="flex items-center gap-2">
+                <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, histon: String(Math.max(0, Number(s.histon || 0) - 1)) }))}
+                  className="w-11 h-11 rounded-xl bg-neutral-card border border-neutral-border text-neutral-fg text-xl font-bold hover:bg-neutral-secondary transition-colors disabled:opacity-40 flex items-center justify-center">−</button>
+                <span className="w-12 text-4xl font-black text-neutral-fg text-center tabular-nums">{scores.histon !== '' ? scores.histon : '0'}</span>
+                <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, histon: String(Number(s.histon || 0) + 1) }))}
+                  className="w-11 h-11 rounded-xl bg-neutral-card border border-neutral-border text-neutral-fg text-xl font-bold hover:bg-neutral-secondary transition-colors disabled:opacity-40 flex items-center justify-center">+</button>
+              </div>
             </div>
-            <span className="text-2xl text-neutral-muted/80 mb-2">–</span>
-            <div className="flex-1">
-              <label className="block text-xs font-semibold uppercase tracking-wide text-neutral-muted mb-2">Opposition Score</label>
-              <input
-                type="number"
-                min="0"
-                disabled={savingScore}
-                value={scores.opposition}
-                onChange={e => setScores(s => ({ ...s, opposition: e.target.value }))}
-                placeholder="0"
-                className="w-full text-2xl font-black text-center bg-neutral-card border border-neutral-border rounded-lg px-3 py-2 text-neutral-fg focus:outline-none focus:ring-2 focus:ring-neutral-accent"
-              />
+            <span className="text-3xl text-neutral-muted/50 mt-5">–</span>
+            {/* Opposition score stepper */}
+            <div className="flex flex-col items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wide text-neutral-muted">Opposition</span>
+              <div className="flex items-center gap-2">
+                <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, opposition: String(Math.max(0, Number(s.opposition || 0) - 1)) }))}
+                  className="w-11 h-11 rounded-xl bg-neutral-card border border-neutral-border text-neutral-fg text-xl font-bold hover:bg-neutral-secondary transition-colors disabled:opacity-40 flex items-center justify-center">−</button>
+                <span className="w-12 text-4xl font-black text-neutral-fg text-center tabular-nums">{scores.opposition !== '' ? scores.opposition : '0'}</span>
+                <button type="button" disabled={savingScore} onClick={() => setScores(s => ({ ...s, opposition: String(Number(s.opposition || 0) + 1) }))}
+                  className="w-11 h-11 rounded-xl bg-neutral-card border border-neutral-border text-neutral-fg text-xl font-bold hover:bg-neutral-secondary transition-colors disabled:opacity-40 flex items-center justify-center">+</button>
+              </div>
             </div>
-            <button
-              onClick={handleScoreChange}
-              disabled={savingScore || scores.histon === '' || scores.opposition === ''}
-              className="px-4 py-2 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 mb-2"
-            >
-              {savingScore ? 'Saving…' : 'Add Score'}
-            </button>
           </div>
+          <button
+            onClick={handleScoreChange}
+            disabled={savingScore}
+            className="w-full py-3.5 bg-neutral-accent hover:bg-neutral-accent/90 text-neutral-bg text-sm font-bold rounded-xl transition-colors disabled:opacity-50"
+          >
+            {savingScore ? 'Saving…' : 'Save Score'}
+          </button>
         </div>
       )}
 
@@ -1348,9 +1354,13 @@ export default function MatchDetail() {
       )}
 
       {/* ── Lineup ── */}
-      <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm p-5 sm:p-6">
-        <h2 className="text-base font-bold text-neutral-fg mb-4">Lineup</h2>
-        <LineupMatrix match={match} editMode={editMode} onRefetch={refetch} />
+      <div className="bg-neutral-card rounded-2xl border border-neutral-border shadow-sm overflow-hidden">
+        <div className="px-5 sm:px-6 pt-5 sm:pt-6 pb-0">
+          <h2 className="text-base font-bold text-neutral-fg mb-4">Lineup</h2>
+        </div>
+        <div className="px-5 sm:px-6 pb-5 sm:pb-6">
+          <LineupMatrix match={match} editMode={editMode} onRefetch={refetch} />
+        </div>
       </div>
 
       {/* ── Goals & Events ── */}

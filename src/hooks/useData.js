@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
 import {
   fetchMatches,
   fetchMatchDetail,
@@ -168,4 +169,34 @@ export const useSeasons = () => {
   }, [])
 
   return { seasons, loading, error }
+}
+
+// ─── FA League Position ───────────────────────────────────────────────────────
+
+export const useLeaguePosition = (faTableUrl) => {
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!faTableUrl) { setLoading(false); return }
+    setLoading(true)
+    const load = async () => {
+      try {
+        const base = window.__ENV__?.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL
+        const res = await fetch(`${base}/functions/v1/fa-league-table?url=${encodeURIComponent(faTableUrl)}`)
+        if (!res.ok) throw new Error(`League table fetch failed (${res.status})`)
+        const result = await res.json()
+        if (result?.error) throw new Error(result.error)
+        setData(result)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [faTableUrl])
+
+  return { data, loading, error }
 }

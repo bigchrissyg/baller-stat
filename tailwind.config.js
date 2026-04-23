@@ -17,6 +17,7 @@ export default {
         neutral: {
           'bg':        '#F0F4F8',    // Cool light background (not stark white)
           'surface':   '#FFFFFF',    // Card surface
+          'card':      '#FFFFFF',    // Card / panel background
           'elevated':  '#FFFFFF',    // Elevated / modal
           'border':    '#E2E8F2',    // Subtle card border
           'muted':     '#94A3B8',    // Muted labels (PLAYED, WON etc.)

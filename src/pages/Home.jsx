@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { useMatches, useSeasons, useAllPlayersStats } from '../hooks/useData'
+import { useMatches, useSeasons, useAllPlayersStats, useLeaguePosition } from '../hooks/useData'
 import { createMatch } from '../lib/supabase'
 import { formatDate, formatDateShort, getMatchResult, getMatchTypeColor, getPositionGroup } from '../lib/utils'
 import StatCard from '../components/ui/StatCard'
@@ -625,7 +625,7 @@ function PlayerStatsTable({ data }) {
 const RESULT_COLOR = { W: '#00D68F', D: '#94A3B8', L: '#E8354A' }
 const RESULT_LABEL = { W: 'Win', D: 'Draw', L: 'Loss' }
 
-function FormTrendChart({ played }) {
+function FormTrendChart({ played, leaguePosition, leagueLoading }) {
   if (played.length < 2) return null
 
   const chartData = [...played].reverse().map((m) => ({
@@ -731,20 +731,74 @@ function FormTrendChart({ played }) {
         </ResponsiveContainer>
       </div>
 
-      {/* Per-match result strip */}
-      <div className="px-4 sm:px-6 pb-4 sm:pb-5 pt-2 flex items-center gap-1 sm:gap-1.5 flex-wrap border-t border-neutral-border/60 mt-2">
-        <span className="text-xs text-neutral-muted font-medium mr-1 uppercase tracking-widest">Results</span>
-        {chartData.map((d, i) => (
-          <div
-            key={i}
-            title={`${d.date} vs ${d.opposition}: ${d.for}–${d.against}`}
-            className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white cursor-default transition-transform hover:scale-125 select-none"
-            style={{ backgroundColor: RESULT_COLOR[d.result] }}
-          >
-            {d.result}
+      {/* League position — FC25 style */}
+      <a
+        href="https://fulltime.thefa.com/table.html?league=7615527&selectedSeason=995335902&selectedDivision=416593959&selectedCompetition=0&selectedFixtureGroupKey=1_893994731"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block mt-2 mx-0 rounded-b-2xl overflow-hidden group"
+        style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}
+      >
+        {/* Header bar */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.07]">
+          <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/40">League Table</span>
+          <svg className="w-3 h-3 text-white/25 group-hover:text-white/50 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </div>
+
+        {leagueLoading ? (
+          <div className="px-4 py-5 flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-white/20 animate-pulse" />
+            <span className="text-xs text-white/30">Fetching league position…</span>
           </div>
-        ))}
-      </div>
+        ) : !leaguePosition?.rows ? (
+          <div className="px-4 py-4 text-xs text-white/30">League position unavailable</div>
+        ) : (
+          <div className="divide-y divide-white/[0.06]">
+            {leaguePosition.rows.map((row) => (
+              <div
+                key={row.position}
+                className={`flex items-center gap-3 px-4 py-2.5 transition-colors ${
+                  row.isUs
+                    ? 'bg-neutral-accent/20'
+                    : 'hover:bg-white/[0.03]'
+                }`}
+              >
+                {/* Position */}
+                <span className={`w-5 text-center text-sm font-black tabular-nums shrink-0 ${
+                  row.isUs ? 'text-neutral-accent' : 'text-white/35'
+                }`}>
+                  {row.position}
+                </span>
+
+                {/* Team name */}
+                <span className={`flex-1 text-sm font-semibold truncate ${
+                  row.isUs ? 'text-white' : 'text-white/55'
+                }`}>
+                  {row.isUs ? 'Histon Hornets Blue' : row.team}
+                </span>
+
+                {/* P W D L — hidden on very small screens */}
+                <div className="hidden xs:flex sm:flex items-center gap-3 shrink-0">
+                  {[['P', row.played], ['W', row.won], ['D', row.drawn], ['L', row.lost]].map(([label, val]) => (
+                    <div key={label} className="flex flex-col items-center w-5">
+                      <span className="text-[9px] font-bold uppercase tracking-widest text-white/25 leading-none">{label}</span>
+                      <span className={`text-xs font-bold tabular-nums leading-tight ${row.isUs ? 'text-white/80' : 'text-white/40'}`}>{val}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Points */}
+                <div className={`w-8 text-right shrink-0 ${row.isUs ? 'text-white font-black text-sm' : 'text-white/40 font-bold text-sm'}`}>
+                  {row.points}
+                  <span className="text-[9px] font-semibold text-white/40 ml-0.5">pts</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </a>
     </div>
   )
 }
@@ -756,6 +810,14 @@ export default function Home() {
   const { canEdit } = useAuth()
   const { matches, loading, error } = useMatches()
   const { data: statsData, loading: statsLoading } = useAllPlayersStats()
+  const { seasons } = useSeasons()
+  const { data: leaguePosition, loading: leagueLoading } = useLeaguePosition(
+    (() => {
+      // Use the season from the most recent played match
+      const latestSeasonId = matches.find(m => m.season_id)?.season_id
+      return seasons.find(s => s.id === latestSeasonId)?.fa_table_url ?? null
+    })()
+  )
   const [filter, setFilter] = useState('All')
   const [showModal, setShowModal] = useState(false)
 
@@ -812,7 +874,7 @@ export default function Home() {
       {/* ── Season Form Trend ── */}
       {played.length > 1 && (
         <section>
-          <FormTrendChart played={played} />
+          <FormTrendChart played={played} leaguePosition={leaguePosition} leagueLoading={leagueLoading} />
         </section>
       )}
 
