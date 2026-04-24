@@ -6,6 +6,7 @@ import { calculatePlayerAggregateStats, updatePlayer, insertPlayerSeason, delete
 import { formatDate, getPositionColor, getMatchResult, getInitials } from '../lib/utils'
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
+import { useAlert } from '../components/ui/AlertModal'
 import PlayerStatsCharts from '../components/PlayerStatsCharts'
 
 export default function PlayerProfile() {
@@ -18,6 +19,7 @@ export default function PlayerProfile() {
   
   const [isManaging, setIsManaging] = useState(false)
   const [saving, setSaving] = useState(false)
+  const { showAlert, AlertModal } = useAlert()
 
   const loading = playerLoading || statsLoading
 
@@ -37,7 +39,7 @@ export default function PlayerProfile() {
       await updatePlayer(player.id, { active: !player.active })
       await refetchPlayer()
     } catch (err) {
-      alert(err.message)
+      showAlert(err.message)
     } finally {
       setSaving(false)
     }
@@ -53,7 +55,7 @@ export default function PlayerProfile() {
       }
       await refetchPlayer()
     } catch (err) {
-      alert(err.message)
+      showAlert(err.message)
     } finally {
       setSaving(false)
     }
@@ -260,6 +262,7 @@ export default function PlayerProfile() {
           </div>
         </div>
       )}
+      {AlertModal}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { Auth } from './components/Auth'
+import { ResetPassword } from './components/ResetPassword'
 import Header from './components/layout/Header'
 import BottomNav from './components/layout/BottomNav'
 import './App.css'
@@ -13,7 +14,7 @@ const PlayerProfile = lazy(() => import('./pages/PlayerProfile'))
 const Stats         = lazy(() => import('./pages/Stats'))
 
 function AppContent() {
-  const { user, loading, error } = useAuth()
+  const { user, loading, error, needsPasswordReset } = useAuth()
 
   if (loading) {
     return (
@@ -33,6 +34,10 @@ function AppContent() {
         </div>
       </div>
     )
+  }
+
+  if (needsPasswordReset) {
+    return <ResetPassword />
   }
 
   if (!user) {

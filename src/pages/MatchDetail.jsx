@@ -28,6 +28,7 @@ import {
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
 import ProposeLineupModal from '../components/lineup/ProposeLineupModal'
+import { useAlert } from '../components/ui/AlertModal'
 
 const POSITIONS = ['GK', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LM', 'RM', 'CF', 'LF', 'RF', 'ST']
 const MATCH_TYPES = ['League', 'Cup', 'Friendly']
@@ -248,22 +249,28 @@ function FormationPitch({ players }) {
 const fmtMin = (m) => m % 1 !== 0 ? m.toFixed(1) : String(Math.round(m))
 
 // Show substitutions and position changes between slices
-function SubstitutionsSummary({ prevSlice, currentSlice }) {
-  if (!prevSlice) return null
-
+function getSubChanges(prevSlice, currentSlice) {
   const prevMap = new Map(prevSlice.active.map(p => [p.id, p]))
   const currMap = new Map(currentSlice.active.map(p => [p.id, p]))
-
-  const subOff = prevSlice.active.filter(p => !currMap.has(p.id))
-  const subOn = currentSlice.active.filter(p => !prevMap.has(p.id))
-  const positionChanges = currentSlice.active.filter(p => prevMap.has(p.id) && prevMap.get(p.id).position !== p.position)
-
-  if (subOff.length === 0 && subOn.length === 0 && positionChanges.length === 0) {
-    return null
+  return {
+    subOff: prevSlice.active.filter(p => !currMap.has(p.id)),
+    subOn: currentSlice.active.filter(p => !prevMap.has(p.id)),
+    positionChanges: currentSlice.active.filter(p => prevMap.has(p.id) && prevMap.get(p.id).position !== p.position),
+    prevMap,
+    currMap,
   }
+}
+
+function SubstitutionsSummary({ prevSlice, currentSlice, atMinute }) {
+  if (!prevSlice) return null
+  const { subOff, subOn, positionChanges, prevMap, currMap } = getSubChanges(prevSlice, currentSlice)
+  if (subOff.length === 0 && subOn.length === 0 && positionChanges.length === 0) return null
 
   return (
     <div className="mt-3 pt-3 border-t border-neutral-border text-xs space-y-1.5">
+      {atMinute != null && (
+        <p className="text-[10px] font-bold uppercase tracking-widest text-neutral-muted mb-1">{fmtMin(atMinute)}'</p>
+      )}
       {subOff.length > 0 && (
         <div className="flex flex-wrap gap-2 items-start">
           <span className="text-neutral-muted font-semibold">Off:</span>
@@ -307,23 +314,20 @@ function SubstitutionsSummary({ prevSlice, currentSlice }) {
 function PitchView({ match }) {
   const allApps = match.player_appearances || []
   const matchLen = match.match_length_mins || 60
+  const halfTime = matchLen / 2
 
   if (allApps.filter(a => a.position).length === 0) {
     return <p className="text-sm text-neutral-muted py-8 text-center">No positions recorded yet.</p>
   }
 
-  // Collect every time boundary where the lineup could change
   const times = [...new Set([0, ...allApps.flatMap(a => [a.time_start, a.time_end]), matchLen])]
     .sort((a, b) => a - b)
 
-  // For each interval between consecutive boundaries, find which players are active
   const slices = []
   for (let i = 0; i < times.length - 1; i++) {
     const t1 = times[i]
     const t2 = times[i + 1]
     const mid = (t1 + t2) / 2
-
-    // Deduplicate by player_id — last matching appearance wins
     const activeMap = new Map()
     for (const a of allApps) {
       if (a.time_start <= mid && a.time_end > mid && a.position) {
@@ -332,11 +336,9 @@ function PitchView({ match }) {
     }
     const active = [...activeMap.values()]
     if (active.length === 0) continue
-
     const key = active.slice().sort((a, b) => a.id - b.id).map(a => `${a.id}:${a.position}`).join(',')
-
     if (slices.length > 0 && slices.at(-1).key === key) {
-      slices.at(-1).t2 = t2   // extend the existing slice
+      slices.at(-1).t2 = t2
     } else {
       slices.push({ t1, t2, active, key })
     }
@@ -346,17 +348,91 @@ function PitchView({ match }) {
     return <p className="text-sm text-neutral-muted py-8 text-center">No positions recorded yet.</p>
   }
 
+  const h1 = slices.filter(s => s.t2 <= halfTime)
+  const h2 = slices.filter(s => s.t1 >= halfTime)
+  const lastH1 = h1.at(-1)
+  const firstH2 = h2[0]
+  const htChanges = lastH1 && firstH2 ? getSubChanges(lastH1, firstH2) : null
+  const htHasChanges = htChanges && (htChanges.subOff.length > 0 || htChanges.subOn.length > 0 || htChanges.positionChanges.length > 0)
+
+  const pitchGrid = (group, globalOffset) => (
+    <div className={`grid gap-6 ${group.length === 1 ? 'max-w-xs mx-auto' : 'grid-cols-1 sm:grid-cols-2'}`}>
+      {group.map((slice, idx) => {
+        const globalIdx = globalOffset + idx
+        const prev = globalIdx > 0 ? slices[globalIdx - 1] : null
+        return (
+          <div key={idx} className="select-none">
+            <p className="text-center text-sm font-semibold text-neutral-fg/70 mb-2">
+              {fmtMin(slice.t1)}' – {fmtMin(slice.t2)}'
+            </p>
+            <FormationPitch players={slice.active} />
+            <SubstitutionsSummary prevSlice={prev} currentSlice={slice} atMinute={prev ? slice.t1 : null} />
+          </div>
+        )
+      })}
+    </div>
+  )
+
+  if (h1.length === 0 || h2.length === 0) {
+    return pitchGrid(slices, 0)
+  }
+
   return (
-    <div className={`grid gap-6 ${slices.length === 1 ? 'max-w-xs mx-auto' : 'grid-cols-1 sm:grid-cols-2'}`}>
-      {slices.map((slice, idx) => (
-        <div key={idx} className="select-none">
-          <p className="text-center text-sm font-semibold text-neutral-fg/70 mb-2">
-            {fmtMin(slice.t1)}' – {fmtMin(slice.t2)}'
-          </p>
-          <FormationPitch players={slice.active} />
-          <SubstitutionsSummary prevSlice={idx > 0 ? slices[idx - 1] : null} currentSlice={slice} />
+    <div className="space-y-6">
+      {pitchGrid(h1, 0)}
+
+      {/* Half Time divider */}
+      <div className="relative flex items-center gap-4 py-1">
+        <div className="flex-1 h-px bg-neutral-border" />
+        <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-muted whitespace-nowrap px-1">
+          Half Time · {fmtMin(halfTime)}'
+        </span>
+        <div className="flex-1 h-px bg-neutral-border" />
+      </div>
+
+      {/* Changes at half time */}
+      {htHasChanges && (
+        <div className="rounded-xl border border-neutral-border bg-neutral-secondary/40 px-4 py-3 text-xs space-y-1.5">
+          {htChanges.subOff.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-start">
+              <span className="text-neutral-muted font-semibold">Off:</span>
+              <div className="flex flex-wrap gap-1">
+                {htChanges.subOff.map(p => (
+                  <span key={p.id} className="bg-red-100 text-red-700 px-2 py-0.5 rounded">
+                    {p.name} <span className="font-semibold">← {p.position}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {htChanges.subOn.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-start">
+              <span className="text-neutral-muted font-semibold">On:</span>
+              <div className="flex flex-wrap gap-1">
+                {htChanges.subOn.map(p => (
+                  <span key={p.id} className="bg-green-100 text-green-700 px-2 py-0.5 rounded">
+                    {p.name} <span className="font-semibold">→ {htChanges.currMap.get(p.id).position}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {htChanges.positionChanges.length > 0 && (
+            <div className="flex flex-wrap gap-2 items-start">
+              <span className="text-neutral-muted font-semibold">Position:</span>
+              <div className="flex flex-wrap gap-1">
+                {htChanges.positionChanges.map(p => (
+                  <span key={p.id} className="bg-hornets-secondary/20 text-hornets-secondary px-2 py-0.5 rounded">
+                    {p.name} ({htChanges.prevMap.get(p.id).position} → {p.position})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      ))}
+      )}
+
+      {pitchGrid(h2, h1.length)}
     </div>
   )
 }
@@ -373,6 +449,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
   const [addForm, setAddForm] = useState({ player_id: '', time_start: 0, time_end: matchLen / 2, position: 'GK' })
   const [addErr, setAddErr] = useState(null)
   const [excluded, setExcluded] = useState(new Set())
+  const { showAlert, AlertModal } = useAlert()
   const [appearances, setAppearances] = useState(match.player_appearances || [])
   const [showPropose, setShowPropose] = useState(false)
 
@@ -536,7 +613,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
 
       setAppearances(updated)
     } catch (e) {
-      alert(e.message)
+      showAlert(e.message)
       await onRefetch()
     } finally {
       setBusy(false)
@@ -552,11 +629,11 @@ function LineupMatrix({ match, editMode, onRefetch }) {
         // Optimistically remove from state
         const updated = allApps.filter(a => a.player_id !== playerId)
         setAppearances(updated)
-        
+
         // Delete from server
         await Promise.all(playerApps.map(a => deletePlayerAppearance(a.id)))
-      } catch (e) { 
-        alert(e.message)
+      } catch (e) {
+        showAlert(e.message)
         // Refetch on error to sync state
         await onRefetch()
       } finally { 
@@ -783,6 +860,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
           onApply={async () => { await onRefetch(); setShowPropose(false) }}
         />
       )}
+      {AlertModal}
     </div>
   )
 }
@@ -792,10 +870,11 @@ function LineupMatrix({ match, editMode, onRefetch }) {
 function GoalsSection({ match, editMode, onRefetch }) {
   const { players: allPlayers } = usePlayers()
   const matchLen = match.match_length_mins || 60
-  
+  const { showAlert, AlertModal } = useAlert()
+
   // Get eligible players based on season and active status
   const eligiblePlayers = getEligiblePlayers(allPlayers, match)
-  
+
   const [goals, setGoals] = useState(match.goals || [])
   const [form, setForm] = useState({
     scorer_player_id: '',
@@ -922,7 +1001,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
                     setGoals(goals.filter(goal => goal.id !== g.id))
                     await deleteGoal(g.id)
                   } catch (e) {
-                    alert(e.message)
+                    showAlert(e.message)
                     await onRefetch()
                   } finally {
                     setSaving(false)
@@ -968,7 +1047,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
                     setGoals(goals.filter(goal => goal.id !== g.id))
                     await deleteGoal(g.id)
                   } catch (e) {
-                    alert(e.message)
+                    showAlert(e.message)
                     await onRefetch()
                   } finally {
                     setSaving(false)
@@ -1067,6 +1146,7 @@ function GoalsSection({ match, editMode, onRefetch }) {
           {err && <p className="text-xs text-hornets-tertiary">{err}</p>}
         </form>
       )}
+      {AlertModal}
     </div>
   )
 }
@@ -1077,6 +1157,7 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
   const playersInMatch = getUniquePlayersFromAppearances(match.player_appearances || [])
   const [awards, setAwards] = useState(match.star_player_awards || [])
   const [saving, setSaving] = useState(false)
+  const { showAlert, AlertModal } = useAlert()
 
   // Sync local awards with match data when it changes
   useEffect(() => {
@@ -1103,12 +1184,11 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
       }
       // Refresh match data to sync with server
       await onRefetch()
-    } catch (e) { 
-      alert(e.message)
-      // Refetch on error to sync state
+    } catch (e) {
+      showAlert(e.message)
       await onRefetch()
-    } finally { 
-      setSaving(false) 
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -1139,6 +1219,7 @@ function StarPlayersSection({ match, editMode, onRefetch }) {
       {editMode && playersInMatch.length === 0 && (
         <p className="text-sm text-neutral-muted text-center py-2">Add players to the lineup first.</p>
       )}
+      {AlertModal}
     </div>
   )
 }
@@ -1153,6 +1234,7 @@ export default function MatchDetail() {
   const { seasons } = useSeasons()
   const [editMode, setEditMode] = useState(false)
   const [savingType, setSavingType] = useState(false)
+  const { showAlert, AlertModal } = useAlert()
   const [savingScore, setSavingScore] = useState(false)
   const [savingSeason, setSavingSeason] = useState(false)
   const [savingLocation, setSavingLocation] = useState(false)
@@ -1176,7 +1258,7 @@ export default function MatchDetail() {
     try {
       await updateMatch(id, { match_type: newType })
       await refetch()
-    } catch (e) { alert(e.message) }
+    } catch (e) { showAlert(e.message) }
     finally { setSavingType(false) }
   }
 
@@ -1188,10 +1270,10 @@ export default function MatchDetail() {
         opposition_score: parseInt(scores.opposition, 10),
       })
       await refetch()
-    } catch (e) { 
-      alert('Error saving scores: ' + e.message)
-    } finally { 
-      setSavingScore(false) 
+    } catch (e) {
+      showAlert('Error saving scores: ' + e.message)
+    } finally {
+      setSavingScore(false)
     }
   }
 
@@ -1200,7 +1282,7 @@ export default function MatchDetail() {
     try {
       await updateMatch(id, { season_id: newSeasonId || null })
       await refetch()
-    } catch (e) { alert(e.message) }
+    } catch (e) { showAlert(e.message) }
     finally { setSavingSeason(false) }
   }
 
@@ -1209,7 +1291,7 @@ export default function MatchDetail() {
     try {
       await updateMatch(id, { location: newLocation })
       await refetch()
-    } catch (e) { alert(e.message) }
+    } catch (e) { showAlert(e.message) }
     finally { setSavingLocation(false) }
   }
 
@@ -1485,6 +1567,7 @@ export default function MatchDetail() {
           )
         })()}
       </div>
+      {AlertModal}
     </div>
   )
 }

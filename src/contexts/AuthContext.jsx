@@ -16,9 +16,9 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false)
 
   useEffect(() => {
-    // Get initial session
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession()
@@ -37,13 +37,15 @@ export const AuthProvider = ({ children }) => {
 
     getInitialSession()
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state change:', event, session?.user?.email)
         setUser(session?.user ?? null)
         setLoading(false)
         setError(null)
+        if (event === 'PASSWORD_RECOVERY') {
+          setNeedsPasswordReset(true)
+        }
       }
     )
 
@@ -66,6 +68,8 @@ export const AuthProvider = ({ children }) => {
     error,
     signOut,
     canEdit,
+    needsPasswordReset,
+    setNeedsPasswordReset,
   }
 
   return (

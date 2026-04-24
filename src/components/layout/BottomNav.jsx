@@ -1,5 +1,7 @@
+import { useState, useRef, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
+import { useAlert } from '../ui/AlertModal'
 
 const NAV_ITEMS = [
   {
@@ -40,9 +42,91 @@ const NAV_ITEMS = [
   },
 ]
 
-export default function BottomNav() {
-  const { signOut } = useAuth()
+function AccountSheet() {
+  const { user, signOut } = useAuth()
+  const [open, setOpen] = useState(false)
+  const sheetRef = useRef(null)
+  const { showAlert, AlertModal } = useAlert()
 
+  useEffect(() => {
+    if (!open) return
+    const handler = (e) => { if (sheetRef.current && !sheetRef.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const handleResetPassword = async () => {
+    const { supabase } = await import('../../lib/supabase')
+    await supabase.auth.resetPasswordForEmail(user.email, { redirectTo: window.location.origin })
+    setOpen(false)
+    showAlert('Password reset email sent — check your inbox.', 'success')
+  }
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen(v => !v)}
+        className={`flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-semibold tracking-wide transition-colors ${
+          open ? 'text-neutral-accent' : 'text-white/40 hover:text-white/70'
+        }`}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+        </svg>
+        Account
+      </button>
+
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setOpen(false)} />
+
+          {/* Bottom sheet */}
+          <div
+            ref={sheetRef}
+            className="fixed bottom-0 left-0 right-0 z-50 bg-[#1a2235] border-t border-white/10 rounded-t-2xl shadow-2xl"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+          >
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mt-3 mb-4" />
+
+            <div className="px-5 pb-2">
+              <p className="text-[11px] text-white/40 tracking-wide">Signed in as</p>
+              <p className="text-[14px] text-white/80 font-medium truncate mt-0.5">{user?.email}</p>
+            </div>
+
+            <div className="border-t border-white/[0.08] mt-3">
+              <button
+                onClick={handleResetPassword}
+                className="w-full text-left px-5 py-4 text-[14px] text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-3"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 shrink-0">
+                  <rect x="3" y="11" width="18" height="11" rx="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Reset password
+              </button>
+              <button
+                onClick={() => { setOpen(false); signOut() }}
+                className="w-full text-left px-5 py-4 text-[14px] text-white/70 hover:text-white hover:bg-white/[0.05] transition-colors flex items-center gap-3 border-t border-white/[0.06]"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 shrink-0">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                  <polyline points="16 17 21 12 16 7" />
+                  <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
+                Sign out
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+      {AlertModal}
+    </>
+  )
+}
+
+export default function BottomNav() {
   return (
     <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-50 bg-hornets-primary border-t border-white/[0.08]"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -55,9 +139,7 @@ export default function BottomNav() {
             end={end}
             className={({ isActive }) =>
               `flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-semibold tracking-wide transition-colors ${
-                isActive
-                  ? 'text-neutral-accent'
-                  : 'text-white/40 hover:text-white/70'
+                isActive ? 'text-neutral-accent' : 'text-white/40 hover:text-white/70'
               }`
             }
           >
@@ -70,18 +152,7 @@ export default function BottomNav() {
           </NavLink>
         ))}
 
-        {/* Sign out as an icon-only tab */}
-        <button
-          onClick={signOut}
-          className="flex-1 flex flex-col items-center justify-center gap-1 py-2.5 text-[10px] font-semibold tracking-wide text-white/30 hover:text-white/60 transition-colors"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
-          </svg>
-          Sign out
-        </button>
+        <AccountSheet />
       </div>
     </nav>
   )
