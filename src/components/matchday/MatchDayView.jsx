@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { useMatchDetail } from '../../hooks/useData'
 import Spinner from '../ui/Spinner'
 
-// ─── Pitch constants (mirrors MatchDetail) ────────────────────────────────────
+// ─── Pitch constants ──────────────────────────────────────────────────────────
 
 const PITCH_POS = {
   GK:  { x: 50, y: 128 },
@@ -140,13 +141,13 @@ function buildRoster(match) {
   })
 }
 
-// ─── Lineup player row ────────────────────────────────────────────────────────
+// ─── Player row (light theme) ─────────────────────────────────────────────────
 
 function PlayerRow({ player, isSub = false }) {
   const { positions, totalMins, subOnMin } = player
   return (
-    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white/5 border border-white/[0.07]">
-      <div className="flex items-center gap-1 shrink-0 min-w-0">
+    <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl bg-white border border-gray-100 shadow-sm">
+      <div className="flex items-center gap-1 shrink-0">
         {positions.length > 0 ? positions.map(pos => {
           const c = POS_SVG_COLOR[pos] || { fill: '#64748b' }
           return (
@@ -156,21 +157,21 @@ function PlayerRow({ player, isSub = false }) {
             </span>
           )
         }) : (
-          <span className="text-[11px] text-white/30 w-8 text-center">—</span>
+          <span className="text-[11px] text-gray-300 w-8 text-center">—</span>
         )}
       </div>
-      <span className="flex-1 text-sm font-medium text-white/90 truncate">{player.name}</span>
+      <span className="flex-1 text-sm font-medium text-gray-800 truncate">{player.name}</span>
       <div className="shrink-0 text-right">
         {isSub && subOnMin != null && (
-          <span className="text-[10px] text-white/40 font-medium block">{fmtMin(subOnMin)}'</span>
+          <span className="text-[10px] text-gray-400 font-medium block">{fmtMin(subOnMin)}'</span>
         )}
-        <span className="text-xs font-bold text-white/50">{Math.round(totalMins)}'</span>
+        <span className="text-xs font-bold text-gray-400">{Math.round(totalMins)}'</span>
       </div>
     </div>
   )
 }
 
-// ─── Substitution changes chip row ────────────────────────────────────────────
+// ─── Substitution changes (light theme) ───────────────────────────────────────
 
 function SubChanges({ prevSlice, currentSlice }) {
   if (!prevSlice) return null
@@ -183,35 +184,35 @@ function SubChanges({ prevSlice, currentSlice }) {
   if (!subOff.length && !subOn.length && !posCh.length) return null
 
   return (
-    <div className="rounded-xl bg-white/5 border border-white/10 px-4 py-3 space-y-2 text-xs">
+    <div className="rounded-xl bg-white border border-gray-100 shadow-sm px-4 py-3 space-y-2 text-xs">
       {subOff.length > 0 && (
         <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-white/40 font-semibold mr-1">Off</span>
+          <span className="text-gray-400 font-semibold mr-1">Off</span>
           {subOff.map(p => (
-            <span key={p.id} className="bg-red-900/40 text-red-300 border border-red-700/40 px-2 py-0.5 rounded-full">
-              {p.name.split(' ').at(-1)} <span className="text-red-400/70">← {p.position}</span>
+            <span key={p.id} className="bg-red-50 text-red-600 border border-red-100 px-2 py-0.5 rounded-full">
+              {p.name.split(' ').at(-1)} <span className="text-red-400">← {p.position}</span>
             </span>
           ))}
         </div>
       )}
       {subOn.length > 0 && (
         <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-white/40 font-semibold mr-1">On</span>
+          <span className="text-gray-400 font-semibold mr-1">On</span>
           {subOn.map(p => (
-            <span key={p.id} className="bg-green-900/40 text-green-300 border border-green-700/40 px-2 py-0.5 rounded-full">
-              {p.name.split(' ').at(-1)} <span className="text-green-400/70">→ {currentSlice.active.find(x => x.id === p.id)?.position}</span>
+            <span key={p.id} className="bg-green-50 text-green-600 border border-green-100 px-2 py-0.5 rounded-full">
+              {p.name.split(' ').at(-1)} <span className="text-green-400">→ {currentSlice.active.find(x => x.id === p.id)?.position}</span>
             </span>
           ))}
         </div>
       )}
       {posCh.length > 0 && (
         <div className="flex flex-wrap gap-1.5 items-center">
-          <span className="text-white/40 font-semibold mr-1">Moved</span>
+          <span className="text-gray-400 font-semibold mr-1">Moved</span>
           {posCh.map(p => {
             const prev = prevSlice.active.find(x => x.id === p.id)
             return (
-              <span key={p.id} className="bg-blue-900/40 text-blue-300 border border-blue-700/40 px-2 py-0.5 rounded-full">
-                {p.name.split(' ').at(-1)} <span className="text-blue-400/70">{prev?.position}→{p.position}</span>
+              <span key={p.id} className="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded-full">
+                {p.name.split(' ').at(-1)} <span className="text-blue-400">{prev?.position}→{p.position}</span>
               </span>
             )
           })}
@@ -248,6 +249,7 @@ export default function MatchDayView({ matches, onClose }) {
   const roster = match ? buildRoster(match) : []
   const matchLen = match?.match_length_mins ?? 60
   const halfTime = matchLen / 2
+  const totalCards = 1 + slices.length
 
   const starters = roster
     .filter(p => p.isStarter)
@@ -257,101 +259,95 @@ export default function MatchDayView({ matches, onClose }) {
       return (ra === -1 ? 99 : ra) - (rb === -1 ? 99 : rb)
     })
   const subs = roster.filter(p => !p.isStarter).sort((a, b) => a.subOnMin - b.subOnMin)
-  const totalCards = 1 + slices.length
 
-  return (
-    <div className="fixed inset-0 z-[100] flex flex-col" style={{ background: '#080f1e' }}>
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-gray-50">
 
-      {/* ── Header ── */}
-      <div className="flex items-center gap-3 px-4 py-3 border-b border-white/[0.08] shrink-0">
-        <button
-          onClick={onClose}
-          className="flex items-center justify-center w-8 h-8 rounded-full text-white/50 hover:text-white hover:bg-white/10 transition-colors shrink-0"
-          aria-label="Close"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-            <path d="M18 6L6 18M6 6l12 12" />
-          </svg>
-        </button>
+      {/* ── Floating close button ── */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 z-20 w-9 h-9 flex items-center justify-center rounded-full bg-white shadow-md text-gray-400 hover:text-gray-700 hover:shadow-lg transition-all"
+        aria-label="Close"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
 
-        <select
-          value={matchId ?? ''}
-          onChange={handleMatchChange}
-          className="flex-1 min-w-0 bg-white/5 text-white text-sm font-semibold rounded-lg px-3 py-1.5 border border-white/10 focus:outline-none focus:ring-1 focus:ring-blue-400/40 appearance-none cursor-pointer"
-        >
-          {matches.map(m => (
-            <option key={m.id} value={m.id}>
-              vs {m.opposition}
-              {m.match_date ? ` · ${new Date(m.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}
-              {m.histon_score != null ? ` (${m.histon_score}–${m.opposition_score})` : ''}
-            </option>
-          ))}
-        </select>
-
-        {/* Card position dots */}
-        <div className="flex items-center gap-1 shrink-0">
+      {/* ── Floating page dots ── */}
+      {totalCards > 1 && (
+        <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5 z-20 pointer-events-none">
           {Array.from({ length: Math.min(totalCards, 9) }).map((_, i) => (
             <button
               key={i}
               onClick={() => scrollTo(i)}
-              className={`rounded-full transition-all duration-200 ${i === cardIdx ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/25 hover:bg-white/50'}`}
+              className={`rounded-full transition-all duration-200 pointer-events-auto ${i === cardIdx ? 'w-5 h-2 bg-gray-700' : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'}`}
             />
           ))}
         </div>
-      </div>
+      )}
 
-      {/* ── Card track ── */}
+      {/* ── Card track (fills full screen) ── */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
+        <div className="w-full h-full flex items-center justify-center">
           <Spinner message="Loading match…" />
         </div>
       ) : !match ? (
-        <div className="flex-1 flex items-center justify-center text-white/30 text-sm">No match data</div>
+        <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">No match data</div>
       ) : (
         <div
           ref={trackRef}
           onScroll={onScroll}
-          className="flex-1 flex overflow-x-auto overflow-y-hidden"
+          className="w-full h-full flex overflow-x-auto overflow-y-hidden"
           style={{ scrollSnapType: 'x mandatory', WebkitOverflowScrolling: 'touch' }}
         >
 
           {/* ══ Card 1: Lineup ══ */}
           <div className="flex-none w-full h-full overflow-y-auto" style={{ scrollSnapAlign: 'start' }}>
-            <div className="px-4 pt-5 pb-10 space-y-5 max-w-lg mx-auto">
+            <div className="px-4 pt-14 pb-20 space-y-5 max-w-lg mx-auto">
+
+              {/* Match selector */}
+              {matches.length > 1 && (
+                <select
+                  value={matchId ?? ''}
+                  onChange={handleMatchChange}
+                  className="w-full bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-gray-300 appearance-none cursor-pointer shadow-sm"
+                >
+                  {matches.map(m => (
+                    <option key={m.id} value={m.id}>
+                      vs {m.opposition}
+                      {m.match_date ? ` · ${new Date(m.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               {/* Match header */}
-              <div className="rounded-2xl bg-white/[0.04] border border-white/[0.08] px-5 py-4 text-center">
-                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35 mb-1">
+              <div className="text-center pt-2 pb-1">
+                <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-1">
                   {match.match_type} · {match.location === 'H' ? 'Home' : 'Away'}
                 </p>
-                <h2 className="text-2xl font-black text-white">vs {match.opposition}</h2>
-                {match.histon_score != null && (
-                  <p className="text-4xl font-black text-white mt-1 tabular-nums leading-none">
-                    {match.histon_score}
-                    <span className="text-white/30 mx-2">–</span>
-                    {match.opposition_score}
-                  </p>
-                )}
+                <h2 className="text-3xl font-black text-gray-900">vs {match.opposition}</h2>
                 {match.match_date && (
-                  <p className="text-xs text-white/35 mt-2">
-                    {new Date(match.match_date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' })}
-                    <span className="mx-1.5 text-white/20">·</span>
+                  <p className="text-sm text-gray-400 mt-1.5">
+                    {new Date(match.match_date).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    <span className="mx-1.5 text-gray-200">·</span>
                     {matchLen} mins
                   </p>
                 )}
               </div>
 
               {roster.length === 0 && (
-                <p className="text-center text-white/30 text-sm py-8">No lineup recorded for this match.</p>
+                <p className="text-center text-gray-400 text-sm py-8">No lineup recorded for this match.</p>
               )}
 
               {/* Starting XI */}
               {starters.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Starting XI</span>
-                    <div className="flex-1 h-px bg-white/[0.07]" />
-                    <span className="text-[10px] font-bold text-white/20">{starters.length}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">Starting XI</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-[10px] font-bold text-gray-300">{starters.length}</span>
                   </div>
                   <div className="space-y-1.5">
                     {starters.map(p => <PlayerRow key={p.id} player={p} />)}
@@ -363,9 +359,9 @@ export default function MatchDayView({ matches, onClose }) {
               {subs.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 mb-2.5">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-white/35">Substitutes</span>
-                    <div className="flex-1 h-px bg-white/[0.07]" />
-                    <span className="text-[10px] font-bold text-white/20">{subs.length}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400">Substitutes</span>
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-[10px] font-bold text-gray-300">{subs.length}</span>
                   </div>
                   <div className="space-y-1.5">
                     {subs.map(p => <PlayerRow key={p.id} player={p} isSub />)}
@@ -373,9 +369,8 @@ export default function MatchDayView({ matches, onClose }) {
                 </div>
               )}
 
-              {/* Swipe hint */}
               {slices.length > 0 && (
-                <div className="flex items-center justify-center gap-1.5 text-white/20 text-xs pt-4">
+                <div className="flex items-center justify-center gap-1.5 text-gray-300 text-xs pt-2">
                   <span>Swipe for pitch views</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
                     <path d="M9 5l7 7-7 7" />
@@ -383,59 +378,40 @@ export default function MatchDayView({ matches, onClose }) {
                 </div>
               )}
               {slices.length === 0 && roster.length > 0 && (
-                <p className="text-center text-white/20 text-xs pt-4">No pitch positions recorded.</p>
+                <p className="text-center text-gray-300 text-xs pt-4">No pitch positions recorded.</p>
               )}
             </div>
           </div>
 
-          {/* ══ Pitch cards (one per formation slice) ══ */}
+          {/* ══ Pitch cards ══ */}
           {slices.map((slice, i) => {
             const prevSlice = i > 0 ? slices[i - 1] : null
             const half = slice.t1 < halfTime ? '1st Half' : '2nd Half'
             return (
               <div key={i} className="flex-none w-full h-full overflow-y-auto" style={{ scrollSnapAlign: 'start' }}>
-                <div className="px-4 pt-5 pb-10 space-y-4 max-w-lg mx-auto">
+                <div className="px-4 pt-14 pb-20 space-y-4 max-w-sm mx-auto">
 
-                  {/* Time range label */}
+                  {/* Time range */}
                   <div className="flex items-center gap-3">
-                    <div className="flex-1 h-px bg-white/[0.07]" />
-                    <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-white/40 whitespace-nowrap">
+                    <div className="flex-1 h-px bg-gray-200" />
+                    <span className="text-[11px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
                       {fmtMin(slice.t1)}' – {fmtMin(slice.t2)}' · {half}
                     </span>
-                    <div className="flex-1 h-px bg-white/[0.07]" />
+                    <div className="flex-1 h-px bg-gray-200" />
                   </div>
 
-                  {/* Sub / position changes from previous slice */}
+                  {/* Sub / position changes */}
                   <SubChanges prevSlice={prevSlice} currentSlice={slice} />
 
                   {/* Pitch */}
-                  <div className="max-w-xs mx-auto w-full">
-                    <BlueprintPitch players={slice.active} uid={`${matchId}-s${i}`} />
-                  </div>
-
-                  {/* Navigation hints */}
-                  <div className="flex items-center justify-between text-white/15 text-xs pt-2">
-                    <button onClick={() => scrollTo(i)} className="flex items-center gap-1 hover:text-white/40 transition-colors">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 rotate-180">
-                        <path d="M9 5l7 7-7 7" />
-                      </svg>
-                      {i === 0 ? 'Lineup' : `Slice ${i}`}
-                    </button>
-                    {i < slices.length - 1 && (
-                      <button onClick={() => scrollTo(i + 2)} className="flex items-center gap-1 hover:text-white/40 transition-colors">
-                        {`Slice ${i + 2}`}
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
-                          <path d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
+                  <BlueprintPitch players={slice.active} uid={`${matchId}-s${i}`} />
                 </div>
               </div>
             )
           })}
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   )
 }
