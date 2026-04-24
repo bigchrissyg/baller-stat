@@ -61,6 +61,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const canEdit = !!user && ADMIN_EMAILS.includes(user.email?.toLowerCase())
+  const isAdmin = canEdit
 
   const value = {
     user,
@@ -68,6 +69,7 @@ export const AuthProvider = ({ children }) => {
     error,
     signOut,
     canEdit,
+    isAdmin,
     needsPasswordReset,
     setNeedsPasswordReset,
   }

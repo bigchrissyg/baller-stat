@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAlert } from '../ui/AlertModal'
+import { usePresence } from '../../hooks/usePresence'
+import PresenceAvatars from '../ui/PresenceAvatars'
 
 const navClass = (isActive) => isActive
   ? 'bg-neutral-accent text-white text-xs sm:text-[13px] font-semibold px-3 sm:px-[18px] py-[7px] rounded-md tracking-tight shadow-[0_0_0_1px_rgba(14,165,233,0.5),0_2px_8px_rgba(14,165,233,0.35),inset_0_1px_0_rgba(255,255,255,0.2)]'
   : 'text-white/55 text-xs sm:text-[13px] font-medium px-3 sm:px-[14px] py-[7px] rounded-md tracking-tight border border-transparent hover:text-white/90 hover:bg-white/[0.07] hover:border-white/10 transition-all duration-150'
 
 function AccountMenu() {
-  const { user, signOut } = useAuth()
+  const { user, signOut, isAdmin } = useAuth()
   const [open, setOpen] = useState(false)
   const ref = useRef(null)
+  const navigate = useNavigate()
   const { showAlert, AlertModal } = useAlert()
 
   useEffect(() => {
@@ -50,6 +53,18 @@ function AccountMenu() {
             <p className="text-[13px] text-white/80 font-medium truncate mt-0.5">{user?.email}</p>
           </div>
           <div className="py-1">
+            {isAdmin && (
+              <button
+                onClick={() => { setOpen(false); navigate('/settings') }}
+                className="w-full text-left px-4 py-2.5 text-[13px] text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors flex items-center gap-2.5"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 shrink-0">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+                Settings
+              </button>
+            )}
             <button
               onClick={handleResetPassword}
               className="w-full text-left px-4 py-2.5 text-[13px] text-white/60 hover:text-white hover:bg-white/[0.06] transition-colors flex items-center gap-2.5"
@@ -80,6 +95,8 @@ function AccountMenu() {
 }
 
 export default function Header() {
+  const presenceUsers = usePresence('app:global')
+
   return (
     <header className="bg-hornets-primary shadow-header border-b border-white/[0.08] relative">
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-neutral-accent/40 to-transparent" />
@@ -97,7 +114,7 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Nav + account — right side (desktop only) */}
+        {/* Nav + presence + account — desktop */}
         <div className="hidden sm:flex items-center gap-3">
           <nav className="flex items-center gap-1">
             <NavLink to="/" end className={({ isActive }) => navClass(isActive)}>Dashboard</NavLink>
@@ -107,11 +124,16 @@ export default function Header() {
 
           <div className="w-px h-5 bg-white/10 shrink-0" />
 
+          <PresenceAvatars users={presenceUsers} />
+
+          <div className="w-px h-5 bg-white/10 shrink-0" />
+
           <AccountMenu />
         </div>
 
-        {/* Account icon — mobile only (top-right) */}
-        <div className="sm:hidden">
+        {/* Presence + account — mobile */}
+        <div className="sm:hidden flex items-center gap-2">
+          <PresenceAvatars users={presenceUsers} />
           <AccountMenu />
         </div>
 
