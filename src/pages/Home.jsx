@@ -6,6 +6,7 @@ import { createMatch } from '../lib/supabase'
 import { formatDateShort, getMatchResult, getMatchTypeColor } from '../lib/utils'
 import StatCard from '../components/ui/StatCard'
 import Spinner from '../components/ui/Spinner'
+import MatchDayView from '../components/matchday/MatchDayView'
 import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 
 const MATCH_TYPES = ['All', 'League', 'Cup', 'Friendly']
@@ -365,6 +366,7 @@ export default function Home() {
   const [selectedSeason, setSelectedSeason] = useState('all')
   const [typeFilter, setTypeFilter] = useState('All')
   const [showModal, setShowModal] = useState(false)
+  const [showMatchDay, setShowMatchDay] = useState(false)
 
   // FA table URL: use selected season's URL, or fall back to most recent season with one
   const faTableUrl = (() => {
@@ -428,6 +430,7 @@ export default function Home() {
 
   // ── Filtered fixtures ─────────────────────────────────────────────────────
   const filtered = seasonMatches.filter(m => typeFilter === 'All' || m.match_type === typeFilter)
+  const upcomingMatches = matches.filter(m => m.histon_score === null)
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
@@ -496,6 +499,32 @@ export default function Home() {
 
       {/* ── Fixtures ── */}
       <section>
+        {/* Match Day View CTA — only when upcoming fixtures exist */}
+        {upcomingMatches.length > 0 && <button
+          onClick={() => setShowMatchDay(true)}
+          className="w-full mb-3 sm:mb-4 flex items-center gap-4 px-5 py-4 rounded-2xl hover:brightness-110 transition-all shadow-lg text-left"
+          style={{ background: 'linear-gradient(135deg, #0d1e3f 0%, #1a3260 100%)' }}
+        >
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-blue-300">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <circle cx="8"  cy="8"  r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="16" cy="8"  r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="12" cy="8"  r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="8"  cy="17" r="1.5" fill="currentColor" stroke="none" />
+              <circle cx="16" cy="17" r="1.5" fill="currentColor" stroke="none" />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">Match Day View</p>
+            <p className="text-xs text-white/45 mt-0.5">Lineup · Roles · Pitch formations</p>
+          </div>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-white/25 shrink-0">
+            <path d="M9 5l7 7-7 7" />
+          </svg>
+        </button>}
+
         <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4 flex-wrap">
           <div className="flex items-center gap-1 bg-neutral-surface shadow-card rounded-lg p-1">
             {MATCH_TYPES.map(t => (
@@ -620,6 +649,10 @@ export default function Home() {
           onClose={() => setShowModal(false)}
           onCreated={(id) => navigate(`/matches/${id}`)}
         />
+      )}
+
+      {showMatchDay && (
+        <MatchDayView matches={upcomingMatches} onClose={() => setShowMatchDay(false)} />
       )}
     </div>
   )

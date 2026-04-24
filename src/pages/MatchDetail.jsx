@@ -160,15 +160,15 @@ function PositionSelect({ value, suggested, disabled, onChange }) {
 // ─── Pitch View ──────────────────────────────────────────────────────────────
 
 // SVG coordinate space: viewBox "0 0 100 148"
-// GK defends top goal (low y), attackers push toward bottom (high y).
+// GK defends bottom goal (high y), attackers push toward top (low y).
 const PITCH_POS = {
-  GK:  { x: 50, y: 20 },
-  LB:  { x: 80, y: 40 }, CB:  { x: 50, y: 40 }, RB:  { x: 20, y: 40 },
-  CDM: { x: 50, y: 65 },
-  LM:  { x: 80, y: 90 }, CM:  { x: 50, y: 80 }, RM:  { x: 18, y: 90 },
-  CAM: { x: 50, y: 100 },
-  LF:  { x: 78, y: 130 }, CF:  { x: 50, y: 120 }, RF:  { x: 22, y: 120 },
-  ST:  { x: 50, y: 130 },
+  GK:  { x: 50, y: 128 },
+  LB:  { x: 80, y: 108 }, CB:  { x: 50, y: 108 }, RB:  { x: 20, y: 108 },
+  CDM: { x: 50, y: 83 },
+  LM:  { x: 80, y: 58 },  CM:  { x: 50, y: 68 },  RM:  { x: 18, y: 58 },
+  CAM: { x: 50, y: 48 },
+  LF:  { x: 78, y: 18 },  CF:  { x: 50, y: 28 },  RF:  { x: 22, y: 28 },
+  ST:  { x: 50, y: 18 },
 }
 
 const POS_SVG_COLOR = {
@@ -208,22 +208,27 @@ function FormationPitch({ players }) {
 
   return (
     <svg viewBox="0 0 100 148" className="w-full rounded-xl shadow-md" style={{ display: 'block' }}>
-      <rect width="100" height="148" fill="#1a7a3c" rx="6" />
-      {[0,1,2,3,4,5,6].map(i => (
-        <rect key={i} x="5" y={4 + i * 20} width="90" height="10" fill="rgba(0,0,0,0.05)" />
-      ))}
-      <rect x="5"  y="4"   width="90" height="140" fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <line x1="5" y1="74" x2="95"   y2="74"       stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <circle cx="50" cy="74" r="11" fill="none"    stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <circle cx="50" cy="74" r="0.8"               fill="rgba(255,255,255,0.65)" />
-      <rect x="22" y="4"   width="56" height="22"   fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <rect x="35" y="4"   width="30" height="9"    fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <circle cx="50" cy="19"  r="0.7"              fill="rgba(255,255,255,0.65)" />
-      <rect x="40" y="1"   width="20" height="4"    fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <rect x="22" y="122" width="56" height="22"   fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <rect x="35" y="135" width="30" height="9"    fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
-      <circle cx="50" cy="129" r="0.7"              fill="rgba(255,255,255,0.65)" />
-      <rect x="40" y="143" width="20" height="4"    fill="rgba(255,255,255,0.1)" stroke="rgba(255,255,255,0.65)" strokeWidth="0.6" />
+      <defs>
+        <pattern id="bp-grid" width="10" height="10" patternUnits="userSpaceOnUse">
+          <path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(96,165,250,0.08)" strokeWidth="0.3" />
+        </pattern>
+      </defs>
+      {/* Blueprint background + grid */}
+      <rect width="100" height="148" fill="#0d1e3f" rx="6" />
+      <rect width="100" height="148" fill="url(#bp-grid)" rx="6" />
+      {/* Pitch markings */}
+      <rect x="5"  y="4"   width="90" height="140" fill="none" stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <line x1="5" y1="74" x2="95"   y2="74"       stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <circle cx="50" cy="74" r="11" fill="none"    stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <circle cx="50" cy="74" r="0.8"               fill="rgba(96,165,250,0.9)" />
+      <rect x="22" y="4"   width="56" height="22"   fill="rgba(96,165,250,0.06)" stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <rect x="35" y="4"   width="30" height="9"    fill="none"                  stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <circle cx="50" cy="19"  r="0.7"              fill="rgba(96,165,250,0.9)" />
+      <rect x="40" y="1"   width="20" height="4"    fill="rgba(96,165,250,0.15)" stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <rect x="22" y="122" width="56" height="22"   fill="rgba(96,165,250,0.06)" stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <rect x="35" y="135" width="30" height="9"    fill="none"                  stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
+      <circle cx="50" cy="129" r="0.7"              fill="rgba(96,165,250,0.9)" />
+      <rect x="40" y="143" width="20" height="4"    fill="rgba(96,165,250,0.15)" stroke="rgba(96,165,250,0.8)"  strokeWidth="0.6" />
       {placed.map(p => {
         const c = POS_SVG_COLOR[p.position] || { fill: '#64748b', stroke: '#475569' }
         const lastName = p.name.split(' ').at(-1)

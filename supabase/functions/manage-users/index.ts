@@ -20,6 +20,8 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
     // @ts-ignore
     const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // @ts-ignore
+    const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://hornets.maudandchris.co.uk'
 
     const token = (req.headers.get('Authorization') || '').replace('Bearer ', '')
     if (!token) return json({ error: 'Unauthorized' }, 401)
@@ -74,7 +76,7 @@ Deno.serve(async (req) => {
       if (!email) throw new Error('Email is required')
 
       const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
-        redirectTo: req.headers.get('origin') ?? undefined,
+        redirectTo: SITE_URL,
       })
       if (error) throw error
 
