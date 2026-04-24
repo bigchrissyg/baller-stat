@@ -25,23 +25,24 @@ export default function Header() {
           </div>
         </Link>
 
-        {/* Nav + user — right side */}
-        <div className="flex items-center gap-1 sm:gap-0 min-w-0">
+        {/* Nav + user — right side (desktop only) */}
+        <div className="hidden sm:flex items-center gap-0 min-w-0">
           <nav className="flex items-center gap-1">
             <NavLink to="/" end className={({ isActive }) => navClass(isActive)}>Dashboard</NavLink>
             <NavLink to="/players" className={({ isActive }) => navClass(isActive)}>Players</NavLink>
+            <NavLink to="/stats" className={({ isActive }) => navClass(isActive)}>Stats</NavLink>
           </nav>
 
-          <div className="w-px h-5 bg-white/10 mx-2 sm:mx-3 shrink-0" />
+          <div className="w-px h-5 bg-white/10 mx-3 shrink-0" />
 
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <span className="hidden sm:inline text-[12px] text-white/40 tracking-wide truncate max-w-[140px]">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-[12px] text-white/40 tracking-wide truncate max-w-[140px]">
               {user?.email}
             </span>
-            <div className="hidden sm:block w-px h-5 bg-white/10 mx-1 shrink-0" />
+            <div className="w-px h-5 bg-white/10 mx-1 shrink-0" />
             <button
               onClick={signOut}
-              className="text-[12px] text-white/45 font-medium tracking-wide border border-white/12 px-2.5 sm:px-3 py-[5px] rounded-md hover:bg-white/[0.06] hover:text-white/70 transition-all duration-150 whitespace-nowrap shrink-0"
+              className="text-[12px] text-white/45 font-medium tracking-wide border border-white/12 px-3 py-[5px] rounded-md hover:bg-white/[0.06] hover:text-white/70 transition-all duration-150 whitespace-nowrap shrink-0"
             >
               Sign out
             </button>

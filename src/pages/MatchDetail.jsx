@@ -1187,7 +1187,7 @@ export default function MatchDetail() {
             className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
               editMode
                 ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                : 'bg-neutral-secondary text-neutral-fg/70 hover:bg-slate-200'
+                : 'bg-neutral-accent text-white hover:bg-neutral-accent/90'
             }`}
           >
             {editMode ? (

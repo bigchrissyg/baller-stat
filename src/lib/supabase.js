@@ -257,10 +257,10 @@ export const fetchAllPlayersStats = async () => {
   const [appsRes, goalsRes, awardsRes, playersRes] = await Promise.all([
     supabase.from('player_appearances').select(
       `id, player_id, match_id, position, time_start, time_end,
-       matches(match_date, histon_score, opposition_score, match_length_mins)`
+       matches(match_date, histon_score, opposition_score, match_length_mins, season_id)`
     ),
-    supabase.from('goals').select('*'),
-    supabase.from('star_player_awards').select('*, matches(match_date)'),
+    supabase.from('goals').select('*, matches(season_id)'),
+    supabase.from('star_player_awards').select('*, matches(match_date, season_id)'),
     supabase.from('players').select('*, player_seasons(season_id, seasons(id, name))').order('name', { ascending: true }),
   ])
 
