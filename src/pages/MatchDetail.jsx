@@ -27,6 +27,7 @@ import {
 } from '../lib/utils'
 import Spinner from '../components/ui/Spinner'
 import StatCard from '../components/ui/StatCard'
+import ProposeLineupModal from '../components/lineup/ProposeLineupModal'
 
 const POSITIONS = ['GK', 'CB', 'LB', 'RB', 'CM', 'CDM', 'CAM', 'LM', 'RM', 'CF', 'LF', 'RF', 'ST']
 const MATCH_TYPES = ['League', 'Cup', 'Friendly']
@@ -373,6 +374,7 @@ function LineupMatrix({ match, editMode, onRefetch }) {
   const [addErr, setAddErr] = useState(null)
   const [excluded, setExcluded] = useState(new Set())
   const [appearances, setAppearances] = useState(match.player_appearances || [])
+  const [showPropose, setShowPropose] = useState(false)
 
   // Sync local appearances with match data when it changes
   useEffect(() => {
@@ -450,12 +452,42 @@ function LineupMatrix({ match, editMode, onRefetch }) {
 
   // Update or adjust the appearance(s) covering a segment for a player
   const handleCellChange = async (playerId, segment, newPos) => {
+    const covering = findCoveringAppearances(allApps, playerId, segment)
+
+    // When changing the first segment, check if the next segment shares the same
+    // old position — if so, offer to bulk-update all matching appearances at once.
+    let bulkUpdateFromPos = null
+    if (newPos !== '' && segment.start === 0 && covering.length > 0) {
+      const oldPos = covering[0].position
+      if (oldPos && oldPos !== newPos) {
+        const segLen = segment.end - segment.start
+        const nextCovering = findCoveringAppearances(allApps, playerId, {
+          start: segment.end,
+          end: segment.end + segLen,
+        })
+        if (nextCovering.length > 0 && nextCovering[0].position === oldPos) {
+          const doAll = window.confirm(
+            `Change all "${oldPos}" slots to "${newPos}" for this player?`
+          )
+          if (doAll) bulkUpdateFromPos = oldPos
+        }
+      }
+    }
+
     setBusy(true)
     try {
-      const covering = findCoveringAppearances(allApps, playerId, segment)
       let updated = [...allApps]
-      
-      if (newPos === '') {
+
+      if (bulkUpdateFromPos !== null) {
+        // Bulk: update every appearance for this player that has the old position
+        const toUpdate = updated.filter(a => a.player_id === playerId && a.position === bulkUpdateFromPos)
+        await Promise.all(toUpdate.map(a => updatePlayerAppearance(a.id, { position: newPos })))
+        updated = updated.map(a =>
+          a.player_id === playerId && a.position === bulkUpdateFromPos
+            ? { ...a, position: newPos }
+            : a
+        )
+      } else if (newPos === '') {
         // Remove position for this segment
         updated = await trimOrDeleteCovering(covering, segment, updated)
       } else if (covering.length === 0) {
@@ -463,11 +495,11 @@ function LineupMatrix({ match, editMode, onRefetch }) {
         const slot = segmentToAppearanceSlot(segment, matchLen)
         const result = await insertPlayerAppearance({ ...slot, player_id: playerId, match_id: match.id, position: newPos })
         const playerName = allPlayers?.find(p => p.id === playerId)?.name || 'Unknown'
-        updated.push({ 
+        updated.push({
           id: result?.id || Math.max(...updated.map(a => a.id || 0), 0) + 1,
-          ...slot, 
-          player_id: playerId, 
-          match_id: match.id, 
+          ...slot,
+          player_id: playerId,
+          match_id: match.id,
           position: newPos,
           players: { name: playerName }
         })
@@ -501,15 +533,13 @@ function LineupMatrix({ match, editMode, onRefetch }) {
           players: { name: playerName }
         })
       }
-      
-      // Optimistically update local state
+
       setAppearances(updated)
-    } catch (e) { 
+    } catch (e) {
       alert(e.message)
-      // Refetch on error to sync state
       await onRefetch()
-    } finally { 
-      setBusy(false) 
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -586,6 +616,24 @@ function LineupMatrix({ match, editMode, onRefetch }) {
           >{label}</button>
         ))}
       </div>
+
+      {/* Generate Lineup CTA — shown in edit mode before any appearances exist */}
+      {editMode && allApps.length === 0 && (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-[#1E3A5F]/5 border border-[#1E3A5F]/15">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-[#1E3A5F]">No lineup yet</p>
+            <p className="text-[11px] text-neutral-muted mt-0.5">Use Claude to propose an AI-generated lineup based on player stats</p>
+          </div>
+          <button onClick={() => setShowPropose(true)}
+            className="ml-3 shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1E3A5F] text-white text-xs font-semibold hover:bg-[#1E3A5F]/90 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+              <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/>
+            </svg>
+            Generate Lineup
+          </button>
+        </div>
+      )}
 
       {lineupTab === 'pitch' ? (
         <PitchView match={match} />
@@ -725,6 +773,15 @@ function LineupMatrix({ match, editMode, onRefetch }) {
         </form>
       )}
       </div>
+      )}
+
+      {showPropose && (
+        <ProposeLineupModal
+          match={match}
+          eligiblePlayers={eligiblePlayers}
+          onClose={() => setShowPropose(false)}
+          onApply={async () => { await onRefetch(); setShowPropose(false) }}
+        />
       )}
     </div>
   )
