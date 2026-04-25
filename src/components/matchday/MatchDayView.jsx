@@ -7,11 +7,11 @@ import Spinner from '../ui/Spinner'
 
 const PITCH_POS = {
   GK:  { x: 50, y: 128 },
-  LB:  { x: 80, y: 108 }, CB:  { x: 50, y: 108 }, RB:  { x: 20, y: 108 },
+  LB:  { x: 20, y: 108 }, CB:  { x: 50, y: 108 }, RB:  { x: 80, y: 108 },
   CDM: { x: 50, y: 83  },
-  LM:  { x: 80, y: 58  }, CM:  { x: 50, y: 68  }, RM:  { x: 18, y: 58  },
+  LM:  { x: 18, y: 58  }, CM:  { x: 50, y: 68  }, RM:  { x: 80, y: 58  },
   CAM: { x: 50, y: 48  },
-  LF:  { x: 78, y: 18  }, CF:  { x: 50, y: 28  }, RF:  { x: 22, y: 28  },
+  LF:  { x: 22, y: 18  }, CF:  { x: 50, y: 28  }, RF:  { x: 78, y: 28  },
   ST:  { x: 50, y: 18  },
 }
 
