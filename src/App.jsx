@@ -13,6 +13,7 @@ const PlayerList    = lazy(() => import('./pages/PlayerList'))
 const PlayerProfile = lazy(() => import('./pages/PlayerProfile'))
 const Stats         = lazy(() => import('./pages/Stats'))
 const Settings      = lazy(() => import('./pages/Settings'))
+const DesignSystem  = lazy(() => import('./pages/DesignSystem'))
 
 function AppContent() {
   const { user, loading, error, needsPasswordReset } = useAuth()
@@ -56,7 +57,8 @@ function AppContent() {
             <Route path="/players"     element={<PlayerList />} />
             <Route path="/players/:id" element={<PlayerProfile />} />
             <Route path="/stats"       element={<Stats />} />
-            <Route path="/settings"    element={<Settings />} />
+            <Route path="/settings"       element={<Settings />} />
+            <Route path="/design-system"  element={<DesignSystem />} />
           </Routes>
         </Suspense>
       </main>

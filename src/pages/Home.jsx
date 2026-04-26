@@ -1,12 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useMatches, useSeasons, useLeaguePosition } from '../hooks/useData'
-import { createMatch } from '../lib/supabase'
+import { supabase, createMatch, updateMatch } from '../lib/supabase'
 import { formatDateShort, getMatchResult, getMatchTypeColor } from '../lib/utils'
 import StatCard from '../components/ui/StatCard'
 import Spinner from '../components/ui/Spinner'
 import MatchDayView from '../components/matchday/MatchDayView'
+import SpondLogo from '../components/ui/SpondLogo'
 import { PieChart, Pie, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, ReferenceLine } from 'recharts'
 
 const MATCH_TYPES = ['All', 'League', 'Cup', 'Friendly']
@@ -126,7 +127,7 @@ function AddFixtureModal({ onClose, onCreated }) {
 
 // ─── Fixture row ──────────────────────────────────────────────────────────────
 
-function FixtureRow({ match }) {
+function FixtureRow({ match, linkSpondId, onLink }) {
   const navigate = useNavigate()
   const { result } = getMatchResult(match.histon_score, match.opposition_score)
   const hasScore = match.histon_score !== null && match.opposition_score !== null
@@ -146,7 +147,7 @@ function FixtureRow({ match }) {
       </div>
       <div className="hidden sm:block w-px h-10 bg-neutral-border shrink-0" />
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
+        <div className="flex items-center gap-2 mb-1 flex-wrap">
           <span className="sm:hidden text-xs text-neutral-muted">{formatDateShort(match.match_date)}</span>
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${getMatchTypeColor(match.match_type)}`}>{match.match_type}</span>
           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${match.location === 'H' ? 'bg-badge-home-bg text-badge-home-fg' : 'bg-badge-away-bg text-badge-away-fg'}`}>
@@ -156,6 +157,22 @@ function FixtureRow({ match }) {
         <p className="text-sm sm:text-base font-semibold text-neutral-fg truncate">vs {match.opposition}</p>
         <p className="text-xs text-neutral-muted mt-0.5">{match.seasons?.name}</p>
       </div>
+      {match.spond_event_id ? (
+        <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#00CC52]/10 border border-[#00CC52]/25">
+          <SpondLogo height={9} color="#00AA44" />
+        </span>
+      ) : linkSpondId && (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={e => { e.stopPropagation(); onLink(match.id, linkSpondId) }}
+          onKeyDown={e => e.key === 'Enter' && onLink(match.id, linkSpondId)}
+          className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-[#00CC52]/40 bg-[#00CC52]/5 hover:bg-[#00CC52]/15 transition-colors cursor-pointer"
+        >
+          <SpondLogo height={8} color="#00AA44" />
+          <span className="text-[10px] font-semibold text-[#00AA44]">Link</span>
+        </span>
+      )}
       <div className="shrink-0 text-right">
         {hasScore ? (
           <>
@@ -170,6 +187,146 @@ function FixtureRow({ match }) {
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
       </svg>
     </button>
+  )
+}
+
+// ─── Suggested Fixtures ──────────────────────────────────────────────────────
+
+const SUGGEST_CACHE_KEY = 'spond_fixture_check'
+
+function SuggestedFixtures({ onAdded, onLinkable }) {
+  const { seasons } = useSeasons()
+  const [suggestions, setSuggestions] = useState(undefined) // undefined = loading
+  const [checked, setChecked] = useState(new Set())
+  const [dismissed, setDismissed] = useState(new Set())
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState(null)
+
+  useEffect(() => {
+    const cached = sessionStorage.getItem(SUGGEST_CACHE_KEY)
+    if (cached !== null) {
+      const result = JSON.parse(cached)
+      setSuggestions(result.suggestions ?? [])
+      setChecked(new Set((result.suggestions ?? []).map(s => s.spond_id)))
+      onLinkable(result.linkable ?? [])
+      return
+    }
+    supabase.functions.invoke('spond-sync', { body: { action: 'suggest' } })
+      .then(({ data, error }) => {
+        const result = (!error && !data?.error) ? data : { suggestions: [], linkable: [] }
+        const toCache = { suggestions: result.suggestions ?? [], linkable: result.linkable ?? [] }
+        sessionStorage.setItem(SUGGEST_CACHE_KEY, JSON.stringify(toCache))
+        setSuggestions(toCache.suggestions)
+        setChecked(new Set(toCache.suggestions.map(s => s.spond_id)))
+        onLinkable(toCache.linkable)
+      })
+      .catch(() => {
+        sessionStorage.setItem(SUGGEST_CACHE_KEY, JSON.stringify({ suggestions: [], linkable: [] }))
+        setSuggestions([])
+      })
+  }, [])
+
+  const visible = (suggestions ?? []).filter(s => !dismissed.has(s.spond_id))
+  const selectedList = visible.filter(s => checked.has(s.spond_id))
+
+  const toggle = (id) => setChecked(prev => {
+    const next = new Set(prev)
+    next.has(id) ? next.delete(id) : next.add(id)
+    return next
+  })
+
+  const toggleAll = () => {
+    if (selectedList.length === visible.length) setChecked(new Set())
+    else setChecked(new Set(visible.map(s => s.spond_id)))
+  }
+
+  const addFixtures = async (list) => {
+    const latestSeasonId = [...seasons].sort((a, b) => b.id - a.id)[0]?.id ?? null
+    setAdding(true); setAddError(null)
+    try {
+      for (const s of list) {
+        await createMatch({
+          opposition: s.opposition,
+          match_date: s.match_date,
+          match_type: s.match_type,
+          location: s.home ? 'H' : 'A',
+          match_length_mins: 60,
+          season_id: latestSeasonId,
+          histon_score: null,
+          opposition_score: null,
+          spond_event_id: s.spond_id,
+        })
+        setDismissed(prev => new Set([...prev, s.spond_id]))
+      }
+      sessionStorage.removeItem(SUGGEST_CACHE_KEY)
+      onAdded()
+    } catch (err) {
+      setAddError(err.message)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  if (suggestions === undefined || !visible.length) return null
+
+  return (
+    <section className="rounded-2xl border border-amber-200 overflow-hidden shadow-sm">
+      <div className="px-5 py-3 bg-amber-50 border-b border-amber-200 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+          <h3 className="text-sm font-semibold text-amber-900">
+            {visible.length} fixture{visible.length !== 1 ? 's' : ''} found in Spond but not logged
+          </h3>
+        </div>
+        <div className="flex items-center gap-2">
+          <button onClick={toggleAll} className="text-xs text-amber-700 hover:text-amber-900 transition-colors">
+            {selectedList.length === visible.length ? 'Deselect all' : 'Select all'}
+          </button>
+          {selectedList.length > 0 && (
+            <button
+              onClick={() => addFixtures(selectedList)}
+              disabled={adding}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-neutral-accent text-white hover:bg-neutral-accent/90 transition-colors disabled:opacity-50"
+            >
+              {adding ? 'Adding…' : selectedList.length === visible.length ? 'Add all' : `Add ${selectedList.length} selected`}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {addError && (
+        <p className="px-5 py-2 text-xs text-rose-600 bg-rose-50 border-b border-amber-200">{addError}</p>
+      )}
+
+      <ul className="bg-white divide-y divide-amber-100">
+        {visible.map(s => (
+          <li key={s.spond_id} className="flex items-center gap-3 px-5 py-3">
+            <input
+              type="checkbox"
+              checked={checked.has(s.spond_id)}
+              onChange={() => toggle(s.spond_id)}
+              className="w-4 h-4 accent-neutral-accent shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+                <span className="text-xs text-neutral-muted">
+                  {new Date(s.match_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                </span>
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${getMatchTypeColor(s.match_type)}`}>
+                  {s.match_type}
+                </span>
+                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${s.home ? 'bg-badge-home-bg text-badge-home-fg' : 'bg-badge-away-bg text-badge-away-fg'}`}>
+                  {s.home ? 'Home' : 'Away'}
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-neutral-fg truncate">vs {s.opposition}</p>
+            </div>
+            <button onClick={() => setDismissed(prev => new Set([...prev, s.spond_id]))}
+              className="text-neutral-muted hover:text-neutral-fg text-lg leading-none shrink-0">&times;</button>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -367,6 +524,9 @@ export default function Home() {
   const [typeFilter, setTypeFilter] = useState('All')
   const [showModal, setShowModal] = useState(false)
   const [showMatchDay, setShowMatchDay] = useState(false)
+  const [suggestKey, setSuggestKey] = useState(0)
+  const [linkableMap, setLinkableMap] = useState({}) // matchId -> spondEventId
+  const [linkedIds, setLinkedIds] = useState(new Set()) // matchIds linked this session
 
   // FA table URL: use selected season's URL, or fall back to most recent season with one
   const faTableUrl = (() => {
@@ -431,6 +591,14 @@ export default function Home() {
   // ── Filtered fixtures ─────────────────────────────────────────────────────
   const filtered = seasonMatches.filter(m => typeFilter === 'All' || m.match_type === typeFilter)
   const upcomingMatches = matches.filter(m => m.histon_score === null)
+
+  const handleLink = async (matchId, spondEventId) => {
+    try {
+      await updateMatch(matchId, { spond_event_id: spondEventId })
+      setLinkedIds(prev => new Set([...prev, matchId]))
+      setLinkableMap(prev => { const next = { ...prev }; delete next[matchId]; return next })
+    } catch { /* silent — badge just won't appear */ }
+  }
 
   return (
     <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4 sm:py-8 space-y-4 sm:space-y-8">
@@ -497,6 +665,15 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── Suggested fixtures from Spond ── */}
+      {canEdit && (
+        <SuggestedFixtures
+          key={suggestKey}
+          onAdded={() => { sessionStorage.removeItem(SUGGEST_CACHE_KEY); setSuggestKey(k => k + 1); navigate(0) }}
+          onLinkable={list => setLinkableMap(Object.fromEntries(list.map(l => [l.match_id, l.spond_id])))}
+        />
+      )}
+
       {/* ── Fixtures ── */}
       <section>
         {/* Match Day View CTA — only when upcoming fixtures exist */}
@@ -553,7 +730,14 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-1.5 sm:space-y-2.5">
-            {filtered.map(m => <FixtureRow key={m.id} match={m} />)}
+            {filtered.map(m => (
+              <FixtureRow
+                key={m.id}
+                match={linkedIds.has(m.id) ? { ...m, spond_event_id: linkableMap[m.id] ?? 'linked' } : m}
+                linkSpondId={!m.spond_event_id && !linkedIds.has(m.id) ? linkableMap[m.id] : null}
+                onLink={handleLink}
+              />
+            ))}
           </div>
         )}
       </section>
